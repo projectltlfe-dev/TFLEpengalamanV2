@@ -3,471 +3,429 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#000000">
-<title>Kapsul Memori – Hari Pertamaku</title>
+<meta name="theme-color" content="#8CC4E4">
+<title>Kapsul Memori – Aku dan Atasanku Dulu</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+  /* ================= TOKENS ================= */
   :root{
-    --black:#000000;
-    --text:#F4F4F5;
-    --muted:#A1A1AA;
-    --dim:#71717A;
-    --line:rgba(255,255,255,.12);
-    --line-strong:rgba(255,255,255,.28);
-    --surface:#141416;
-    --lilac:#C4B5FD;
-    --warm:#FDBA74;
-    --warm-soft:rgba(253,186,116,.13);
-    --cool:#93C5FD;
-    --cool-soft:rgba(147,197,253,.13);
-    --tone:var(--lilac);
-    --tone-soft:rgba(196,181,253,.13);
+    --stage-h:600px;                       /* LMS: lebar 100%, tinggi 600px */
+    --ink:#12343B; --ink-2:#46656A; --ink-3:#6B878B;
+    --line:#DCE7E4; --surface:#F4F8F7;
+    --panel:rgba(255,255,255,.93);
+    --teal:#1E7F72; --teal-soft:#E2F3EE; --teal-text:#17695E; --teal-line:#B9DED5;
+    --warm:#FFB868; --warm-soft:#FFF1DF; --warm-text:#A55A12; --warm-line:#F6CF9F;
+    --cool:#4A7DB0; --cool-soft:#E7EFF8; --cool-text:#355F8A; --cool-line:#C4D6EB;
+    --g-warm:#FFCB8E; --g-cool:#B5D3F0; --g-mint:#9BE7D3;
+    --tone:var(--teal); --tone-ink:#fff; --tone-soft:var(--teal-soft); --tone-text:var(--teal-text); --tone-line:var(--teal-line); --glow:var(--g-mint);
     --ease:cubic-bezier(.22,.61,.36,1);
     --font:'Plus Jakarta Sans', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   }
-  [data-tone="good"]{ --tone:var(--warm); --tone-soft:var(--warm-soft); }
-  [data-tone="bad"]{ --tone:var(--cool); --tone-soft:var(--cool-soft); }
+  [data-tone="good"]{ --tone:var(--warm); --tone-ink:#3A2410; --tone-soft:var(--warm-soft); --tone-text:var(--warm-text); --tone-line:var(--warm-line); --glow:var(--g-warm); }
+  [data-tone="bad"]{ --tone:var(--cool); --tone-ink:#fff; --tone-soft:var(--cool-soft); --tone-text:var(--cool-text); --tone-line:var(--cool-line); --glow:var(--g-cool); }
+  [data-tone="merge"]{ --glow:var(--g-mint); }
+
+  /* Warna pemandangan per cuaca */
+  .frame, .frame[data-scene="calm"]{
+    --far:#93B8C6; --snow:#F5F9FB; --mid:#5F978B; --tree:#3D7A5C; --hill:#74AA6E;
+    --lake-top:#A4D5E0; --lake-bot:#5FA3B4; --water-hi:#FFFFFF; --cloud:#FFFFFF;
+    --bamboo:#3F8C5F; --bamboo-node:#2F6E4A; --leaf:#55A872; --mist-op:.35;
+  }
+  .frame[data-scene="good"]{
+    --far:#86C0DA; --snow:#FFFFFF; --mid:#4FA486; --tree:#2F8A55; --hill:#82C463;
+    --lake-top:#95E2F2; --lake-bot:#3FA9C9; --water-hi:#FFFFFF; --cloud:#FFFFFF;
+    --bamboo:#4CA35A; --bamboo-node:#3A8546; --leaf:#86CB64; --mist-op:.18;
+  }
+  .frame[data-scene="bad"]{
+    --far:#5F6E7A; --snow:#A9B4BC; --mid:#4C5F60; --tree:#33493F; --hill:#4F6B56;
+    --lake-top:#73899A; --lake-bot:#45596A; --water-hi:#C9D4DD; --cloud:#7A8592;
+    --bamboo:#3D5F52; --bamboo-node:#2E4A40; --leaf:#4D6F60; --mist-op:.5;
+  }
 
   *{ box-sizing:border-box; margin:0; padding:0; }
   html,body{
-    height:100%; background:var(--black); color:var(--text);
+    width:100%; height:var(--stage-h); background:#B9DDEE; color:var(--ink);
     font-family:var(--font); -webkit-font-smoothing:antialiased;
     overflow:hidden; -webkit-tap-highlight-color:transparent;
   }
+  .frame{ position:relative; width:100%; height:var(--stage-h); overflow:hidden; background:#B9DDEE; }
   button{ font:inherit; color:inherit; }
-  :focus-visible{ outline:2px solid var(--lilac); outline-offset:3px; border-radius:12px; }
+  :focus-visible{ outline:2.5px solid var(--teal); outline-offset:3px; border-radius:12px; }
 
-  /* ===== Background hujan ===== */
-  /* Layer paling belakang: semua elemen game selalu berada di atasnya */
-  .bg-layer{
-    position:fixed; inset:0; z-index:0; pointer-events:none;
-    overflow:hidden; background:#000;
-  }
-  .bg-rain, .bg-video{
-    position:absolute; inset:0; width:100%; height:100%;
-    object-fit:cover; opacity:.5;
-  }
-  .bg-vignette{
-    position:absolute; inset:0;
-    background:radial-gradient(ellipse at center, rgba(0,0,0,0) 35%, rgba(0,0,0,.6) 100%);
-  }
+  /* ================= PEMANDANGAN (layer paling belakang) ================= */
+  .scene{ position:absolute; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+  .sky{ position:absolute; inset:0; opacity:0; transition:opacity 1.6s ease; }
+  .sky-calm{ background:linear-gradient(180deg, #8CC4E4 0%, #B9DDEE 45%, #E2F1F2 78%, #EEF6F0 100%); }
+  .sky-good{ background:linear-gradient(180deg, #2F9FEA 0%, #62BDF2 38%, #AEE0F7 70%, #FFF6DA 100%); }
+  .sky-bad { background:linear-gradient(180deg, #36404C 0%, #4E5B6B 42%, #6E7C8B 75%, #838F99 100%); }
+  .frame[data-scene="calm"] .sky-calm, .frame[data-scene="good"] .sky-good, .frame[data-scene="bad"] .sky-bad{ opacity:1; }
 
-  /* ===== Progress bar ===== */
-  .progress{
-    position:fixed; left:0; right:0; top:env(safe-area-inset-top, 0px);
-    height:3px; z-index:20; background:rgba(255,255,255,.07);
+  .sun{
+    position:absolute; top:12%; right:14%; width:52px; height:52px; border-radius:50%;
+    background:#FFF6D2; opacity:.95; box-shadow:0 0 40px 14px rgba(255,244,200,.55);
+    transition:background 1.6s ease, box-shadow 1.6s ease, opacity 1.6s ease, transform 1.6s var(--ease);
   }
-  .progress-fill{
-    height:100%; width:0%;
-    background:linear-gradient(90deg, var(--lilac), var(--warm));
-    border-radius:0 3px 3px 0;
-    box-shadow:0 0 10px rgba(196,181,253,.55);
-    transition:width 1s var(--ease);
+  .sun::before{
+    content:''; position:absolute; inset:-70px; border-radius:50%; opacity:0;
+    background:repeating-conic-gradient(rgba(255,240,170,.5) 0 5deg, rgba(255,240,170,0) 5deg 18deg);
+    -webkit-mask-image:radial-gradient(circle, transparent 28%, #000 36%, transparent 70%);
+            mask-image:radial-gradient(circle, transparent 28%, #000 36%, transparent 70%);
+    animation:spin 50s linear infinite; transition:opacity 1.6s ease;
   }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .frame[data-scene="good"] .sun{ background:#FFE36E; transform:scale(1.45); box-shadow:0 0 60px 26px rgba(255,226,110,.6), 0 0 170px 80px rgba(255,236,160,.35); }
+  .frame[data-scene="good"] .sun::before{ opacity:1; }
+  .frame[data-scene="bad"] .sun{ opacity:0; transform:scale(.8); }
 
-  /* ===== Layout ===== */
-  .app{
-    position:relative; z-index:2; isolation:isolate; transform:translateZ(0);
-    height:100%; height:100dvh;
-    display:flex; flex-direction:column;
-    padding-top:env(safe-area-inset-top, 0px);
+  .cl{ position:absolute; fill:var(--cloud); transition:fill 1.6s ease, opacity 1.6s ease; animation:drift 70s ease-in-out infinite alternate; }
+  .c1{ top:9%;  left:4%;  width:150px; }
+  .c2{ top:20%; left:46%; width:190px; animation-delay:-25s; }
+  .c3{ top:4%;  left:70%; width:120px; animation-delay:-40s; }
+  .c4{ top:28%; left:18%; width:110px; animation-delay:-55s; }
+  .frame[data-scene="good"] .c2, .frame[data-scene="good"] .c4{ opacity:0; }
+  .frame[data-scene="good"] .c1, .frame[data-scene="good"] .c3{ opacity:.8; }
+  @keyframes drift{ from{ transform:translateX(-50px); } to{ transform:translateX(50px); } }
+  .storm{ position:absolute; inset:0 0 50% 0; opacity:0; transition:opacity 1.6s ease; }
+  .frame[data-scene="bad"] .storm{ opacity:1; }
+  .storm .cl{ fill:#4A5563; }
+  .storm .s1{ top:-6%; left:-10%; width:420px; }
+  .storm .s2{ top:2%;  left:40%;  width:380px; fill:#56616F; animation-delay:-30s; }
+  .storm .s3{ top:14%; left:6%;   width:320px; fill:#5E6977; animation-delay:-50s; }
+  .storm .s4{ top:-2%; left:72%;  width:340px; fill:#434E5C; animation-delay:-15s; }
+
+  .land{ position:absolute; inset:0; width:100%; height:100%; }
+  .far, .snow, .mid, .tree, .hill, .bb, .bn, .lf{ transition:fill 1.6s ease; }
+  .far{ fill:var(--far); } .snow{ fill:var(--snow); } .mid{ fill:var(--mid); }
+  .tree{ fill:var(--tree); } .hill{ fill:var(--hill); }
+  .mist{ opacity:var(--mist-op); transition:opacity 1.6s ease; }
+  .st-top{ stop-color:var(--lake-top); } .st-bot{ stop-color:var(--lake-bot); }
+  .st-hi{ stop-color:var(--water-hi); }
+  .streak{ fill:none; stroke:var(--water-hi); stroke-width:1.6; stroke-linecap:round; opacity:.85; stroke-dasharray:8 18; animation:fall 1s linear infinite; }
+  .streak.s2{ animation-duration:.8s; } .streak.s3{ animation-duration:1.2s; }
+  @keyframes fall{ to{ stroke-dashoffset:-52; } }
+  .ripple{ fill:none; stroke:var(--water-hi); stroke-width:1.4; opacity:0; transform-box:fill-box; transform-origin:center; animation:ripple 4.4s ease-out infinite; }
+  .ripple.r2{ animation-delay:1.5s; } .ripple.r3{ animation-delay:3s; }
+  @keyframes ripple{ 0%{ transform:scale(.25); opacity:.8; } 100%{ transform:scale(1.7); opacity:0; } }
+  .shimmer path{ stroke:var(--water-hi); stroke-width:2; stroke-linecap:round; animation:shimmer 3.4s ease-in-out infinite; }
+  .shimmer path:nth-child(2n){ animation-delay:1.1s; } .shimmer path:nth-child(3n){ animation-delay:2.1s; }
+  @keyframes shimmer{ 0%,100%{ opacity:.1; } 50%{ opacity:.7; } }
+
+  .bamboo{ position:absolute; bottom:0; height:100%; width:auto; }
+  .bamboo-l{ left:-14px; } .bamboo-r{ right:-14px; transform:scaleX(-1); }
+  .bb{ fill:var(--bamboo); } .bn{ fill:var(--bamboo-node); } .lf{ fill:var(--leaf); }
+  .stalk{ transform-box:fill-box; transform-origin:50% 100%; animation:sway 7s ease-in-out infinite alternate; }
+  .stalk.k2{ animation-duration:8.5s; animation-delay:-2s; } .stalk.k3{ animation-duration:6.2s; animation-delay:-4s; }
+  .frame[data-scene="bad"] .stalk{ animation-duration:3.6s; }
+  @keyframes sway{ from{ transform:rotate(-1deg); } to{ transform:rotate(1.4deg); } }
+
+  .fx{ position:absolute; inset:0; width:100%; height:100%; }
+  .flash{ position:absolute; inset:0; background:#EEF3FF; opacity:0; }
+  .flash.go{ animation:flash .8s ease-out; }
+  @keyframes flash{ 0%{ opacity:0; } 8%{ opacity:.42; } 18%{ opacity:.05; } 28%{ opacity:.26; } 100%{ opacity:0; } }
+
+  /* ================= PROGRESS ================= */
+  .progress{ position:absolute; left:0; right:0; top:0; height:4px; z-index:20; background:rgba(255,255,255,.55); }
+  .progress-fill{ height:100%; width:0%; border-radius:0 4px 4px 0; background:linear-gradient(90deg, var(--teal), #F0A04B); transition:width 1s var(--ease); }
+
+  /* ================= LAYOUT ================= */
+  .app{ position:relative; z-index:2; isolation:isolate; height:100%; display:flex; flex-direction:column; }
+  .topbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px 4px; min-height:50px; }
+  .top-left{ display:flex; align-items:center; flex:1; min-width:0; gap:8px; }
+  .pill{
+    display:inline-flex; align-items:center; gap:8px; border-radius:999px;
+    background:rgba(255,255,255,.92); border:1px solid rgba(255,255,255,.9);
+    box-shadow:0 6px 18px -10px rgba(10,40,50,.5);
+    font-size:.82rem; font-weight:700; color:var(--ink);
   }
-  .topbar{
-    display:flex; align-items:center; justify-content:space-between;
-    gap:12px; padding:18px 20px 6px; min-height:64px;
-  }
-  .top-left{ display:flex; align-items:center; flex:1; min-width:0; }
-  .topback{
-    flex:none; display:inline-flex; align-items:center; gap:6px;
-    max-width:0; opacity:0; padding:9px 0; margin-right:0; overflow:hidden; white-space:nowrap;
-    border-radius:999px; border:1px solid transparent; background:transparent;
-    font-size:.82rem; font-weight:600; color:var(--muted); cursor:pointer; pointer-events:none;
-    transition:max-width .5s var(--ease), opacity .4s ease, padding .5s var(--ease), margin .5s var(--ease), border-color .4s, color .3s;
-  }
-  .topback.shown{
-    max-width:140px; opacity:1; padding:9px 14px 9px 12px; margin-right:12px; pointer-events:auto;
-    border-color:var(--line); background:rgba(255,255,255,.06);
-  }
-  .topback:hover{ color:var(--text); }
-  .me{
-    display:flex; align-items:center; gap:10px; min-width:0;
-    opacity:0; transform:translateY(-6px);
-    transition:opacity .6s var(--ease), transform .6s var(--ease);
-  }
+  .topback{ flex:none; padding:8px 13px 8px 11px; cursor:pointer; display:none; }
+  .topback.shown{ display:inline-flex; animation:fadein .4s ease; }
+  @keyframes fadein{ from{ opacity:0; } to{ opacity:1; } }
+  .me{ min-width:0; padding:4px 12px 4px 4px; opacity:0; transform:translateY(-6px); transition:opacity .6s var(--ease), transform .6s var(--ease); }
   .me.show{ opacity:1; transform:none; }
-  .me-avatar{
-    flex:none; width:32px; height:32px; border-radius:50%;
-    display:grid; place-items:center;
-    background:var(--lilac); color:#000; font-weight:800; font-size:.9rem;
-  }
-  .me-name{
-    font-size:.9rem; font-weight:600; color:var(--muted);
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:42vw;
-  }
-
-  .bgm{
-    flex:none; display:inline-flex; align-items:center; gap:9px;
-    padding:9px 14px 9px 12px; border-radius:999px;
-    background:rgba(255,255,255,.06); border:1px solid var(--line);
-    font-size:.82rem; font-weight:600; color:var(--muted); cursor:pointer;
-    transition:background .3s, color .3s, border-color .3s;
-  }
-  .bgm.on{ background:rgba(196,181,253,.14); border-color:rgba(196,181,253,.4); color:var(--text); }
-  .eq{ display:inline-flex; align-items:flex-end; gap:2px; height:13px; }
-  .eq i{ display:block; width:3px; height:4px; border-radius:2px; background:currentColor; transition:height .3s; }
-  .bgm.on .eq i{ animation:eq 1.1s ease-in-out infinite; }
-  .bgm.on .eq i:nth-child(2){ animation-delay:.25s; }
-  .bgm.on .eq i:nth-child(3){ animation-delay:.5s; }
-  @keyframes eq{ 0%,100%{ height:4px; } 50%{ height:13px; } }
+  .me-avatar{ flex:none; width:28px; height:28px; border-radius:50%; display:grid; place-items:center; background:var(--teal); color:#fff; font-weight:800; font-size:.82rem; }
+  .me-name{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:36vw; }
+  .snd{ flex:none; padding:8px 13px 8px 11px; cursor:pointer; transition:background .3s, color .3s; }
+  .snd.on{ background:var(--teal); color:#fff; border-color:var(--teal); }
+  .eq{ display:inline-flex; align-items:flex-end; gap:2px; height:12px; }
+  .eq i{ display:block; width:3px; height:4px; border-radius:2px; background:currentColor; }
+  .snd.on .eq i{ animation:eq 1.4s ease-in-out infinite; }
+  .snd.on .eq i:nth-child(2){ animation-delay:.3s; } .snd.on .eq i:nth-child(3){ animation-delay:.6s; }
+  @keyframes eq{ 0%,100%{ height:4px; } 50%{ height:12px; } }
 
   .stage{ position:relative; flex:1; min-height:0; }
-
-  /* ===== Screen transitions (fade) ===== */
   .screen{
-    position:absolute; inset:0; display:flex;
-    overflow-y:auto; -webkit-overflow-scrolling:touch;
-    opacity:0; visibility:hidden; transform:translateY(14px);
-    transition:opacity .6s var(--ease), transform .6s var(--ease), visibility 0s linear .6s;
+    position:absolute; inset:0; display:flex; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    opacity:0; visibility:hidden; transform:translateY(12px);
+    transition:opacity .55s var(--ease), transform .55s var(--ease), visibility 0s linear .55s;
   }
-  .screen.active{
-    opacity:1; visibility:visible; transform:none;
-    transition:opacity .8s var(--ease), transform .8s var(--ease), visibility 0s;
-  }
-  .screen-inner{
-    margin:auto; width:100%; max-width:560px; text-align:center;
-    padding:20px 22px calc(72px + env(safe-area-inset-bottom, 0px));
-  }
-  .center{ text-align:center; }
+  .screen.active{ opacity:1; visibility:visible; transform:none; transition:opacity .75s var(--ease), transform .75s var(--ease), visibility 0s; }
+  .screen-inner{ margin:auto; width:100%; max-width:540px; padding:2px 12px 4px; }
 
-  /* ===== Typography ===== */
-  .kicker{ font-size:.85rem; font-weight:600; color:var(--muted); margin-bottom:14px; }
-  h1{
-    font-size:clamp(1.65rem, 6vw, 2.35rem); font-weight:800;
-    line-height:1.18; letter-spacing:-.025em; margin-bottom:14px;
-    overflow-wrap:anywhere;
+  /* Panel: semua teks berada di atas permukaan solid → selalu terbaca */
+  .panel{
+    text-align:center; background:var(--panel); border-radius:24px; padding:16px 16px;
+    border:1px solid rgba(255,255,255,.95);
+    box-shadow:0 22px 44px -22px rgba(8,36,46,.55);
+    -webkit-backdrop-filter:blur(14px) saturate(1.2); backdrop-filter:blur(14px) saturate(1.2);
   }
-  .lead{ font-size:1rem; line-height:1.7; color:var(--muted); margin:0 auto 30px; max-width:46ch; }
+  .panel.dark{ background:rgba(13,40,47,.92); border-color:rgba(255,255,255,.12); color:#F2FBF7; }
 
-  /* ===== Buttons ===== */
+  /* ================= TIPOGRAFI ================= */
+  .kicker{ font-size:.78rem; font-weight:700; color:var(--ink-3); margin-bottom:6px; }
+  h1{ font-size:clamp(1.08rem, 4.4vw, 1.45rem); font-weight:800; line-height:1.25; letter-spacing:-.015em; margin-bottom:6px; overflow-wrap:anywhere; color:var(--ink); }
+  .lead{ font-size:.86rem; line-height:1.55; color:var(--ink-2); margin:0 auto 12px; max-width:46ch; }
+  .lead + .lead{ margin-top:-4px; }
+
+  /* ================= TOMBOL ================= */
   .btn{
-    appearance:none; border:0; cursor:pointer; width:100%; min-height:56px;
-    display:inline-flex; align-items:center; justify-content:center; gap:10px;
-    padding:16px 26px; border-radius:999px; font-size:1rem; font-weight:700;
-    transition:transform .25s var(--ease), opacity .35s, background .3s, border-color .3s;
+    appearance:none; border:0; cursor:pointer; width:100%; min-height:48px;
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:12px 20px; border-radius:999px; font-size:.96rem; font-weight:800;
+    transition:transform .25s var(--ease), opacity .35s, background .4s, box-shadow .4s;
   }
   .btn:active:not(:disabled){ transform:scale(.97); }
-  .btn-primary{ background:var(--text); color:#000; }
-  .btn-primary:disabled{ opacity:.22; cursor:not-allowed; }
-  .btn-ghost{ background:transparent; color:var(--text); border:1px solid var(--line-strong); }
-  .btn-ghost:hover:not(:disabled){ border-color:var(--text); }
-  .btn-ghost:disabled{ opacity:.3; cursor:not-allowed; }
-  .finish-hint{
-    margin-top:14px; font-size:.84rem; color:var(--muted);
-    transition:opacity .5s ease, max-height .5s ease, margin .5s ease;
-    max-height:4em; overflow:hidden;
-  }
+  .btn-primary{ background:var(--tone); color:var(--tone-ink); box-shadow:0 10px 22px -12px var(--tone); }
+  .btn-primary:disabled{ opacity:.38; cursor:not-allowed; box-shadow:none; }
+  .btn-ghost{ background:#fff; color:var(--ink); border:1.5px solid var(--line); }
+  .btn-ghost:disabled{ opacity:.45; cursor:not-allowed; }
+  .finish-hint{ flex:none; margin-top:8px; font-size:.78rem; color:var(--ink-2); max-height:4em; overflow:hidden; transition:opacity .5s ease, max-height .5s ease, margin .5s ease; }
   .finish-hint.hide{ opacity:0; max-height:0; margin-top:0; }
 
-  /* ===== Layar 1 ===== */
-  .avatar-lg{
-    width:88px; height:88px; margin:0 auto 30px; border-radius:50%;
-    display:grid; place-items:center;
-    font-size:2.1rem; font-weight:800; color:var(--dim);
-    border:1.5px dashed var(--line-strong);
-    transition:background .45s var(--ease), color .45s, border-color .45s;
-  }
-  .avatar-lg.filled{ background:var(--lilac); border:1.5px solid var(--lilac); color:#000; }
+  /* ================= BRIDGING ================= */
+  .note-ico{ position:relative; width:44px; height:44px; margin:0 auto 6px; border-radius:14px; display:grid; place-items:center; font-size:1.35rem; background:var(--teal-soft); }
+  .note-ico .pen{ position:absolute; right:-8px; bottom:-2px; font-size:.95rem; animation:scribble 1.6s ease-in-out infinite; }
+  @keyframes scribble{ 0%,100%{ transform:translate(0,0) rotate(0); } 25%{ transform:translate(-7px,2px) rotate(-8deg); } 50%{ transform:translate(-2px,-2px) rotate(4deg); } 75%{ transform:translate(-9px,1px) rotate(-6deg); } }
+  .intro-line{ opacity:0; transform:translateY(8px); }
+  #s-intro.play .intro-line{ animation:rise .9s var(--ease) forwards; animation-delay:var(--d, 0s); }
+  @keyframes rise{ to{ opacity:1; transform:none; } }
+  .private{ display:inline-flex; gap:6px; align-items:center; margin:10px auto 0; padding:6px 12px; border-radius:999px; background:var(--surface); color:var(--ink-2); font-size:.78rem; font-weight:600; }
+  .intro-note{ margin-top:8px; font-size:.72rem; color:var(--ink-3); }
+
+  /* ================= NAMA ================= */
+  .avatar-lg{ width:64px; height:64px; margin:0 auto 12px; border-radius:50%; display:grid; place-items:center; font-size:1.7rem; font-weight:800; color:var(--ink-3); border:1.5px dashed #B9CFCA; background:var(--surface); transition:background .45s var(--ease), color .45s, border-color .45s; }
+  .avatar-lg.filled{ background:var(--teal); border:1.5px solid var(--teal); color:#fff; }
   .avatar-lg.pop{ animation:pop .4s var(--ease); }
   @keyframes pop{ 0%{ transform:scale(1); } 45%{ transform:scale(1.13); } 100%{ transform:scale(1); } }
+  .name-input{ width:100%; background:transparent; border:0; outline:none; border-bottom:2px solid #C9DAD6; color:var(--ink); font:inherit; font-size:1.3rem; font-weight:800; text-align:center; padding:10px 4px; border-radius:0; transition:border-color .35s; }
+  .name-input::placeholder{ color:#9DB3B0; font-weight:600; }
+  .name-input:focus{ border-color:var(--teal); }
+  .privacy{ margin-top:10px; font-size:.76rem; line-height:1.5; color:var(--ink-3); }
+  .greet{ min-height:1.5em; margin:8px 0 12px; font-size:.9rem; font-weight:700; color:var(--teal-text); opacity:0; transition:opacity .5s var(--ease); overflow-wrap:anywhere; }
+  .greet.show{ opacity:1; }
 
-  .name-input{
-    width:100%; background:transparent; border:0; outline:none;
-    border-bottom:1.5px solid var(--line-strong);
-    color:var(--text); font:inherit; font-size:1.4rem; font-weight:700;
-    text-align:center; padding:14px 4px; border-radius:0;
-    transition:border-color .35s;
-  }
-  .name-input::placeholder{ color:var(--dim); font-weight:500; }
-  .name-input:focus{ border-color:var(--lilac); }
-  .greet{
-    min-height:1.6em; margin:16px 0 30px; font-size:.95rem; color:var(--lilac);
-    opacity:0; transform:translateY(4px);
-    transition:opacity .5s var(--ease), transform .5s var(--ease);
-    overflow-wrap:anywhere;
-  }
-  .greet.show{ opacity:1; transform:none; }
-
-  /* ===== Layar 2: pilihan ===== */
-  .choices{ display:grid; gap:14px; }
+  /* ================= PILIHAN ================= */
+  .choices{ display:grid; gap:10px; }
   @media (min-width:560px){ .choices{ grid-template-columns:1fr 1fr; } }
   .choice{
-    display:flex; flex-direction:column; align-items:center; gap:12px; width:100%; text-align:center;
-    padding:26px 20px 22px; border-radius:24px; cursor:pointer;
-    background:var(--surface); border:1px solid var(--line);
+    display:flex; flex-direction:column; align-items:center; gap:6px; width:100%; text-align:center;
+    padding:14px 14px 12px; border-radius:20px; cursor:pointer;
+    background:var(--surface); border:1.5px solid var(--line);
     transition:transform .3s var(--ease), background .35s, border-color .35s, opacity .45s;
   }
-  .choice.warm{ --tone:var(--warm); --tone-soft:var(--warm-soft); }
-  .choice.cool{ --tone:var(--cool); --tone-soft:var(--cool-soft); }
-  .choice:hover:not(:disabled){ border-color:var(--tone); background:var(--tone-soft); }
+  .choice.warm{ --tone-soft:var(--warm-soft); --tone-text:var(--warm-text); --tone-line:var(--warm-line); }
+  .choice.cool{ --tone-soft:var(--cool-soft); --tone-text:var(--cool-text); --tone-line:var(--cool-line); }
+  .choice:hover:not(:disabled){ border-color:var(--tone-line); background:var(--tone-soft); }
   .choice:active:not(:disabled){ transform:scale(.98); }
-  .choice-emoji{
-    flex:none; width:52px; height:52px; border-radius:18px;
-    display:grid; place-items:center; font-size:1.55rem; background:var(--tone-soft);
-  }
-  .choice-body{ min-width:0; display:grid; gap:6px; justify-items:center; }
-  .choice-title{ font-weight:700; font-size:1.05rem; color:var(--tone); }
-  .choice-desc{ font-size:.9rem; line-height:1.5; color:var(--muted); }
-  .choice-status{
-    flex:none; font-size:.78rem; font-weight:700; padding:6px 11px; border-radius:999px;
-    background:rgba(255,255,255,.07); color:var(--muted); white-space:nowrap;
-  }
-  .choice.done{ opacity:.42; cursor:default; }
-  .choice.done .choice-status{ background:var(--tone-soft); color:var(--tone); }
-  .hint{ margin-top:22px; text-align:center; font-size:.88rem; color:var(--dim); }
+  .choice-head{ display:flex; align-items:center; gap:8px; }
+  .choice-emoji{ font-size:1.3rem; }
+  .choice-title{ font-weight:800; font-size:1rem; color:var(--tone-text); }
+  .choice-desc{ font-size:.84rem; line-height:1.45; color:var(--ink-2); }
+  .choice-status{ font-size:.74rem; font-weight:800; padding:4px 10px; border-radius:999px; background:#fff; border:1px solid var(--line); color:var(--ink-2); }
+  .choice.done{ opacity:.5; cursor:default; }
+  .choice.done .choice-status{ background:var(--tone-soft); color:var(--tone-text); border-color:var(--tone-line); }
+  .hint{ margin-top:10px; font-size:.82rem; font-weight:600; color:var(--ink-3); }
+  .hint:empty{ display:none; }
 
-  /* ===== Layar 3 & 5: refleksi ===== */
-  .back{
-    background:none; border:0; cursor:pointer; color:var(--dim);
-    font-size:.9rem; font-weight:600; padding:6px 0; margin-bottom:22px;
-    transition:color .3s;
-  }
-  .back:hover{ color:var(--text); }
-  .reflect-wrap{
-    transition:opacity .7s var(--ease), transform .7s var(--ease), filter .7s var(--ease);
-  }
-  .reflect-wrap.sealing{ opacity:0; transform:scale(.88) translateY(8px); filter:blur(6px); }
+  /* ================= REFLEKSI ================= */
+  .reflect-wrap{ transition:opacity .7s var(--ease), transform .7s var(--ease), filter .7s var(--ease); }
+  .reflect-wrap.sealing{ opacity:0; transform:scale(.9) translateY(8px); filter:blur(5px); }
   .no-anim, .no-anim *{ transition:none !important; }
-
-  .tag{
-    display:inline-flex; align-items:center; gap:6px;
-    padding:7px 13px; border-radius:999px; margin-bottom:16px;
-    background:var(--tone-soft); color:var(--tone); font-size:.82rem; font-weight:700;
-  }
-  .label{ font-size:.85rem; font-weight:600; color:var(--dim); margin-bottom:12px; }
-  .chips{ display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-bottom:26px; }
+  .tag{ display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:999px; margin-bottom:6px; background:var(--tone-soft); border:1px solid var(--tone-line); color:var(--tone-text); font-size:.76rem; font-weight:800; }
+  .label{ font-size:.74rem; font-weight:700; color:var(--ink-3); margin-bottom:6px; }
+  .chips{ display:flex; flex-wrap:wrap; justify-content:center; gap:6px; margin-bottom:8px; }
   .chip{
-    flex:0 1 calc(50% - 4px);
-    display:flex; align-items:center; justify-content:center;
-    text-align:center; cursor:pointer;
-    font-size:.84rem; line-height:1.4; font-weight:500;
-    padding:10px 14px; border-radius:18px;
-    background:#18181B; border:1px solid var(--line); color:var(--text);
+    flex:0 1 calc(50% - 4px); display:flex; align-items:center; justify-content:center; text-align:center; cursor:pointer;
+    font-size:.74rem; line-height:1.32; font-weight:600; padding:7px 9px; border-radius:13px;
+    background:var(--surface); border:1.5px solid var(--line); color:var(--ink);
     transition:background .3s, border-color .3s, color .3s, transform .25s var(--ease);
   }
-  .chip:hover{ border-color:var(--tone); }
+  .chip:hover{ border-color:var(--tone-line); }
   .chip:active{ transform:scale(.97); }
-  .chip.selected{ background:var(--tone); border-color:var(--tone); color:#000; font-weight:700; }
-
-  .memory{
-    display:block; width:100%; min-height:104px; max-height:320px; resize:none;
-    background:transparent; border:0; outline:none; border-radius:0;
-    border-bottom:1.5px solid var(--line-strong);
-    color:var(--text); font:inherit; font-size:1.06rem; line-height:1.7; text-align:center;
-    padding:10px 2px 14px; transition:border-color .35s;
-  }
-  .memory::placeholder{ color:var(--dim); }
-  .memory:focus{ border-color:var(--tone); }
-  .ta-hint{
-    min-height:1.5em; margin:10px 0 22px; font-size:.86rem; color:var(--tone);
-    opacity:0; transition:opacity .4s;
-  }
+  .chip.selected{ background:var(--tone); border-color:var(--tone); color:var(--tone-ink); }
+  .write{ border-radius:16px; background:var(--tone-soft); border:1.5px solid var(--tone-line); transition:background .6s, border-color .6s; }
+  .write:focus-within{ border-color:var(--tone); }
+  .memory{ display:block; width:100%; min-height:54px; max-height:180px; resize:none; background:transparent; border:0; outline:none; color:var(--ink); font:inherit; font-size:.94rem; line-height:1.5; text-align:center; padding:8px 12px; }
+  .memory::placeholder{ color:#8EA5A3; }
+  .ta-hint{ min-height:1.1em; margin:4px 0 6px; font-size:.8rem; font-weight:700; color:var(--tone-text); opacity:0; transition:opacity .4s; }
   .ta-hint.show{ opacity:1; }
 
-  /* ===== Time capsule ===== */
-  .capsule{ position:relative; width:190px; height:190px; margin:0 auto 34px; display:grid; place-items:center; }
-  .orb{
-    --c:var(--tone);
-    position:absolute; inset:0; border-radius:50%;
-    background:radial-gradient(circle, rgba(255,255,255,.95) 0%, var(--c) 26%, rgba(0,0,0,0) 68%);
-    mix-blend-mode:screen;
-    opacity:0; transform:translateX(0) scale(.55);
-    transition:opacity .9s ease, transform 1.6s cubic-bezier(.7,0,.25,1);
-  }
-  .orb-b, .orb-m{ display:none; }
-  .capsule.glow .orb{ opacity:1; transform:translateX(0) scale(1); }
-
-  /* Mode akhir: cahaya kuning & biru bergerak pelan lalu menyatu */
-  .capsule.dual .orb-b, .capsule.dual .orb-m{ display:block; }
-  .capsule.dual .orb-a{ --c:var(--warm); transform:translateX(-80px) scale(.45); }
-  .capsule.dual .orb-b{ --c:var(--cool); transform:translateX(80px) scale(.45); }
-  .capsule.dual .orb-m{ --c:var(--lilac); transform:scale(.7); }
-  .capsule.dual.glow .orb-a{ opacity:1; transform:translateX(-64px) scale(.78); }
-  .capsule.dual.glow .orb-b{ opacity:1; transform:translateX(64px) scale(.78); }
-  .capsule.dual.glow .orb-m{ opacity:0; }
-  .capsule.dual.merge .orb-a,
-  .capsule.dual.merge .orb-b{
-    opacity:.55; transform:translateX(0) scale(1);
-    transition:opacity 2s ease 1s, transform 2.4s cubic-bezier(.45,0,.2,1);
-  }
-  .capsule.dual .orb-m{
-    background:radial-gradient(circle, rgba(255,255,255,.7) 0%, var(--lilac) 24%, rgba(196,181,253,.25) 45%, rgba(0,0,0,0) 68%);
-  }
-  .capsule.dual.merge .orb-m{
-    opacity:.75; transform:scale(1.1);
-    transition:opacity 1.6s ease 1.4s, transform 1.8s ease 1.4s;
-  }
-
-  .capsule.shrink .orb, .capsule.dual.shrink .orb{
-    transform:translateX(0) scale(.05);
-    transition:opacity .9s ease, transform 1.6s cubic-bezier(.7,0,.25,1);
-  }
-  .capsule.star .orb, .capsule.dual.star .orb{
-    opacity:0; transition:opacity .6s ease, transform 1.6s cubic-bezier(.7,0,.25,1);
-  }
-  [data-tone="merge"]{ --tone:var(--lilac); --tone-soft:rgba(196,181,253,.13); }
-  .star{
-    position:relative; width:9px; height:9px; border-radius:50%; background:#fff;
-    box-shadow:0 0 12px 3px rgba(255,255,255,.85), 0 0 34px 10px var(--tone);
-    opacity:0; transform:scale(.3);
-    transition:opacity .7s ease, transform .9s var(--ease);
-  }
-  .star::before, .star::after{
-    content:''; position:absolute; left:50%; top:50%; width:2px; height:60px; border-radius:2px;
-    background:linear-gradient(transparent, #fff, transparent);
-    transform:translate(-50%,-50%);
-  }
-  .star::after{ transform:translate(-50%,-50%) rotate(90deg); }
-  .capsule.star .star{ opacity:1; transform:scale(1); animation:twinkle 2.6s ease-in-out .9s infinite; }
-  @keyframes twinkle{ 0%,100%{ transform:scale(1); opacity:1; } 50%{ transform:scale(.78); opacity:.6; } }
-  .capsule-text, .capsule-sub{
-    opacity:0; transform:translateY(8px);
-    transition:opacity 1s var(--ease), transform 1s var(--ease);
-  }
-  .capsule-text{ font-size:1.3rem; font-weight:700; letter-spacing:-.01em; margin-bottom:8px; }
-  .capsule-sub{ font-size:1rem; color:var(--muted); }
-  .capsule-text.show, .capsule-sub.show{ opacity:1; transform:none; }
-
-  /* ===== Catatan privasi ===== */
-  .privacy{ margin-top:12px; font-size:.78rem; line-height:1.5; color:var(--dim); }
-
-  /* ===== Langkah perasaan ===== */
-  .echo{
-    max-width:42ch; margin:0 auto 26px; padding:12px 16px; border-radius:16px;
-    background:#141416; border:1px solid var(--line);
-    font-size:.9rem; line-height:1.6; color:var(--muted); font-style:italic;
-    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
-    overflow-wrap:anywhere;
-  }
-  .feels{ display:grid; gap:10px; }
-  @media (min-width:600px){ .feels{ grid-template-columns:repeat(3, 1fr); } }
-  .feel{
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
-    padding:18px 14px; border-radius:20px; cursor:pointer;
-    background:#141416; border:1px solid var(--line);
-    transition:transform .4s var(--ease), background .35s, border-color .35s, opacity .45s;
-  }
-  .feel:hover:not(:disabled){ border-color:var(--tone); }
+  .echo{ max-width:42ch; margin:0 auto 12px; padding:9px 14px; border-radius:14px; background:var(--surface); border:1px solid var(--line); font-size:.84rem; line-height:1.5; color:var(--ink-2); font-style:italic; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
+  .feels{ display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
+  .feel{ display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:3px; padding:12px 6px; border-radius:18px; cursor:pointer; background:var(--surface); border:1.5px solid var(--line); transition:transform .4s var(--ease), background .35s, border-color .35s, opacity .45s; }
+  .feel:hover:not(:disabled){ border-color:var(--tone-line); }
   .feel:active:not(:disabled){ transform:scale(.97); }
-  .feel-title{ font-weight:700; font-size:1.02rem; }
-  .feel-desc{ font-size:.84rem; color:var(--muted); }
-  .feels.answered .feel{ opacity:.28; transform:scale(.96); cursor:default; }
-  .feels.answered .feel.picked{ opacity:1; transform:scale(1.03); background:var(--tone-soft); border-color:var(--tone); }
-  .feels.answered .feel.picked .feel-title{ color:var(--tone); }
-
-  /* ===== Pertanyaan refleksi ===== */
+  .feel-emoji{ font-size:1.6rem; line-height:1.2; }
+  .feel-title{ font-weight:800; font-size:.86rem; color:var(--ink); }
+  .feel-desc{ font-size:.72rem; line-height:1.35; color:var(--ink-2); }
+  .feels.answered .feel{ opacity:.35; transform:scale(.96); cursor:default; }
+  .feels.answered .feel.picked{ opacity:1; transform:scale(1.04); background:var(--tone-soft); border-color:var(--tone); }
+  .feels.answered .feel.picked .feel-title{ color:var(--tone-text); }
   .q-main{ transition:opacity .6s ease, transform .6s var(--ease), filter .6s ease; }
   .q-main.hide{ opacity:0; transform:scale(.94); filter:blur(4px); }
 
-  /* ===== Layar 6: report card ===== */
-  .card{
-    background:#101012; border:1px solid var(--line);
-    border-radius:28px; padding:26px 22px; margin:6px 0 22px;
-  }
-  .card-head{ display:flex; flex-direction:column; align-items:center; gap:12px; margin-bottom:24px; }
-  .avatar-sm{
-    flex:none; width:58px; height:58px; border-radius:50%;
-    display:grid; place-items:center; background:var(--lilac); color:#000;
-    font-weight:800; font-size:1.5rem;
-  }
-  .card-kicker{ font-size:.78rem; font-weight:600; color:var(--dim); margin-bottom:3px; }
-  .card-name{ font-size:1.35rem; font-weight:800; letter-spacing:-.02em; line-height:1.25; overflow-wrap:anywhere; }
-  .card-date{ font-size:.82rem; color:var(--muted); margin-top:3px; }
-  .card-sec{ border-radius:20px; padding:18px; margin-bottom:12px; background:var(--tone-soft); border:1px solid transparent; }
-  .card-sec .tag{ background:rgba(0,0,0,.25); margin-bottom:10px; }
-  .card-sec p{ font-size:.98rem; line-height:1.7; white-space:pre-wrap; overflow-wrap:anywhere; }
-  .card-sec p.card-feel{ margin-top:10px; font-size:.82rem; font-weight:700; color:var(--tone); white-space:normal; }
-  .card-quote{
-    margin:26px auto 22px; max-width:40ch;
-    font-size:.96rem; line-height:1.7; color:var(--text);
-  }
-  .card-quote::before{
-    content:''; display:block; width:36px; height:3px; border-radius:3px;
-    background:var(--lilac); margin:0 auto 16px;
-  }
-  .card-foot{
-    display:flex; flex-direction:column; align-items:center; gap:6px;
-    padding-top:16px; border-top:1px solid var(--line);
-    font-size:.74rem; color:var(--dim);
-  }
-  .actions{ display:grid; gap:12px; }
-  @media (min-width:520px){ .actions{ grid-template-columns:1fr 1fr; } }
+  /* ================= KAPSUL WAKTU ================= */
+  .capsule-text, .capsule-sub{ opacity:0; transform:translateY(8px); transition:opacity 1s var(--ease), transform 1s var(--ease); }
+  .capsule-text{ font-size:1.15rem; font-weight:800; margin-bottom:6px; }
+  .capsule-sub{ font-size:.92rem; color:#BFD8D2; }
+  .capsule-text.show, .capsule-sub.show{ opacity:1; transform:none; }
+  .capsule-panel{ padding:26px 18px 28px; }
+  .saved-ico{ width:56px; height:56px; margin:0 auto 12px; border-radius:50%; display:grid; place-items:center; font-size:1.5rem; background:rgba(255,255,255,.1); opacity:0; transform:scale(.8); transition:opacity .6s ease, transform .6s var(--ease); }
+  .saved-ico.show{ opacity:1; transform:none; }
 
-  /* ===== Save sheet (cadangan unduhan) ===== */
-  .save-sheet{
-    position:fixed; inset:0; z-index:45; background:rgba(0,0,0,.85);
-    display:flex; align-items:center; justify-content:center; padding:20px;
-    opacity:0; pointer-events:none; transition:opacity .4s ease;
-  }
+  /* ================= KARTU MEMORI ================= */
+  .report-panel{ display:flex; flex-direction:column; max-height:calc(var(--stage-h) - 108px); padding-bottom:12px; }
+  .report-scroll{ flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; margin:0 -6px; padding:0 6px; }
+  .card-head{ display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:10px; text-align:left; }
+  .card-id{ min-width:0; }
+  .avatar-sm{ flex:none; width:42px; height:42px; border-radius:50%; display:grid; place-items:center; background:var(--teal); color:#fff; font-weight:800; font-size:1.2rem; }
+  .card-kicker{ font-size:.72rem; font-weight:700; color:var(--ink-3); margin-bottom:8px; }
+  .card-name{ font-size:1.08rem; font-weight:800; line-height:1.25; overflow-wrap:anywhere; }
+  .card-date{ font-size:.76rem; color:var(--ink-3); }
+  .card-sec{ border-radius:16px; padding:10px 12px; margin-bottom:8px; background:var(--tone-soft); border:1px solid var(--tone-line); }
+  .card-sec .tag{ margin-bottom:6px; background:#fff; }
+  .card-sec p{ font-size:.88rem; line-height:1.55; white-space:pre-wrap; overflow-wrap:anywhere; color:var(--ink); }
+  .card-sec p.card-feel{ margin-top:4px; font-size:.76rem; font-weight:800; color:var(--tone-text); white-space:normal; }
+  .card-quote{ margin:10px auto 8px; max-width:40ch; font-size:.84rem; line-height:1.6; color:var(--ink-2); }
+  .card-quote::before{ content:''; display:block; width:32px; height:3px; border-radius:3px; background:var(--teal); margin:0 auto 10px; }
+  .card-foot{ display:flex; justify-content:center; padding-top:10px; border-top:1px solid var(--line); font-size:.7rem; color:var(--ink-3); }
+  .actions{ flex:none; display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; }
+
+  .save-sheet{ position:absolute; inset:0; z-index:45; background:rgba(10,30,36,.6); display:flex; align-items:center; justify-content:center; padding:16px; opacity:0; pointer-events:none; transition:opacity .4s ease; }
   .save-sheet.show{ opacity:1; pointer-events:auto; }
-  .save-box{
-    width:100%; max-width:440px; max-height:100%; overflow-y:auto; text-align:center;
-    background:#101012; border:1px solid var(--line); border-radius:24px; padding:22px 18px;
-  }
-  .save-title{ font-size:1.15rem; font-weight:800; margin-bottom:8px; }
-  .save-desc{ font-size:.88rem; line-height:1.6; color:var(--muted); margin-bottom:16px; }
-  .save-img{
-    display:block; width:100%; max-height:52vh; object-fit:contain; margin:0 auto 18px;
-    border-radius:16px; border:1px solid var(--line);
-    -webkit-touch-callout:default; user-select:auto;
-  }
+  .save-box{ width:100%; max-width:420px; max-height:100%; overflow-y:auto; text-align:center; background:#fff; border-radius:24px; padding:18px 16px; box-shadow:0 24px 50px -20px rgba(0,0,0,.5); }
+  .save-title{ font-size:1.05rem; font-weight:800; margin-bottom:6px; }
+  .save-desc{ font-size:.84rem; line-height:1.55; color:var(--ink-2); margin-bottom:12px; }
+  .save-img{ display:block; width:100%; max-height:250px; object-fit:contain; margin:0 auto 12px; border-radius:14px; border:1px solid var(--line); -webkit-touch-callout:default; user-select:auto; }
 
-  /* ===== Fade to black ===== */
-  .blackout{
-    position:fixed; inset:0; z-index:50; background:#000;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    text-align:center; padding:32px;
-    opacity:0; pointer-events:none; transition:opacity 1.8s ease;
-  }
+  /* ================= FADE TO BLACK ================= */
+  .blackout{ position:absolute; inset:0; z-index:50; background:#000; color:#F2FBF7; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:32px; opacity:0; pointer-events:none; transition:opacity 1.8s ease; }
   .blackout.on{ opacity:1; pointer-events:all; }
   .bo-line{ opacity:0; transition:opacity 1.6s ease; max-width:34ch; }
   .bo-line.show{ opacity:1; }
-  .bo-1{ font-size:1.25rem; font-weight:600; margin-bottom:12px; }
-  .bo-2{ font-size:.98rem; line-height:1.7; color:var(--muted); }
+  .bo-1{ font-size:1.2rem; font-weight:700; margin-bottom:10px; }
+  .bo-2{ font-size:.95rem; line-height:1.7; color:#A9C4BD; }
 
-  /* ===== Toast & footer ===== */
-  .toast{
-    position:fixed; left:50%; bottom:calc(52px + env(safe-area-inset-bottom, 0px)); z-index:40;
-    transform:translate(-50%, 12px); opacity:0; pointer-events:none;
-    padding:11px 18px; border-radius:999px; background:var(--text); color:#000;
-    font-size:.88rem; font-weight:700; white-space:nowrap;
-    transition:opacity .4s var(--ease), transform .4s var(--ease);
-  }
+  .toast{ position:absolute; left:50%; bottom:40px; z-index:40; transform:translate(-50%, 12px); opacity:0; pointer-events:none; padding:10px 16px; border-radius:999px; background:var(--ink); color:#fff; font-size:.84rem; font-weight:700; white-space:nowrap; transition:opacity .4s var(--ease), transform .4s var(--ease); }
   .toast.show{ opacity:1; transform:translate(-50%, 0); }
-  .copy{
-    position:fixed; left:0; right:0; bottom:0; z-index:3; pointer-events:none;
-    text-align:center; font-size:.7rem; color:var(--dim); letter-spacing:.01em;
-    padding:10px 16px calc(12px + env(safe-area-inset-bottom, 0px));
-    background:linear-gradient(transparent, rgba(0,0,0,.75));
-  }
+  .copy{ flex:none; position:relative; z-index:3; pointer-events:none; text-align:center; padding:2px 16px 8px; }
+  .copy span{ display:inline-block; padding:3px 10px; border-radius:999px; background:rgba(255,255,255,.8); color:var(--ink-2); font-size:.66rem; font-weight:600; }
 
-  @media (min-width:768px){
-    .screen-inner{ padding-top:32px; }
-    .card{ padding:32px 30px; }
-  }
+  @media (min-width:768px){ .panel{ padding:24px 26px; } }
   @media (prefers-reduced-motion: reduce){
     *, *::before, *::after{ animation-duration:.01ms !important; animation-iteration-count:1 !important; }
     .screen, .screen.active{ transform:none; }
+    .intro-line{ opacity:1; transform:none; }
   }
 </style>
 </head>
 <body>
+<div class="frame" id="frame" data-scene="calm">
 
-  <!-- Background hujan (layer paling belakang, opacity 50%) — dibuat dengan canvas, tanpa file video -->
-  <div class="bg-layer" id="bgLayer" aria-hidden="true">
-    <canvas class="bg-rain" id="rainCanvas"></canvas>
-    <div class="bg-vignette"></div>
+  <!-- definisi bentuk yang dipakai ulang -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="cloud" viewBox="0 0 200 90"><path d="M38 84 C12 84 4 62 18 50 C10 28 36 16 52 28 C60 6 94 2 106 24 C120 8 152 12 154 38 C178 36 194 58 184 74 C180 82 172 84 160 84 Z"/></symbol>
+      <path id="leaf" d="M0 0 C14 -7 34 -7 52 -1 C34 4 14 5 0 0Z"/>
+      <g id="pine"><rect x="-1.6" y="-4" width="3.2" height="8" fill="#5B4636"/><path d="M0 -40 L 11 -14 L 6 -14 L 14 0 L -14 0 L -6 -14 L -11 -14 Z"/></g>
+    </defs>
+  </svg>
+
+  <!-- ===== PEMANDANGAN (layer paling belakang) ===== -->
+  <div class="scene" aria-hidden="true">
+    <div class="sky sky-calm"></div>
+    <div class="sky sky-good"></div>
+    <div class="sky sky-bad"></div>
+    <div class="sun"></div>
+    <svg class="cl c1" viewBox="0 0 200 90"><use href="#cloud"/></svg>
+    <svg class="cl c2" viewBox="0 0 200 90"><use href="#cloud"/></svg>
+    <svg class="cl c3" viewBox="0 0 200 90"><use href="#cloud"/></svg>
+    <svg class="cl c4" viewBox="0 0 200 90"><use href="#cloud"/></svg>
+    <div class="storm">
+      <svg class="cl s1" viewBox="0 0 200 90"><use href="#cloud"/></svg>
+      <svg class="cl s2" viewBox="0 0 200 90"><use href="#cloud"/></svg>
+      <svg class="cl s3" viewBox="0 0 200 90"><use href="#cloud"/></svg>
+      <svg class="cl s4" viewBox="0 0 200 90"><use href="#cloud"/></svg>
+    </div>
+
+    <svg class="land" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMax slice">
+      <defs>
+        <linearGradient id="gMist" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity="1"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+        </linearGradient>
+        <linearGradient id="gLake" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="st-top"/><stop offset="1" class="st-bot"/></linearGradient>
+        <linearGradient id="gFall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="st-hi"/><stop offset="1" class="st-top"/></linearGradient>
+      </defs>
+      <!-- gunung jauh bersalju -->
+      <path class="far" d="M0 362 L 110 304 L 190 334 L 330 228 L 430 322 L 520 284 L 640 188 L 760 302 L 860 262 L 980 322 L 1080 250 L 1200 312 V600 H0Z"/>
+      <path class="snow" d="M330 228 L 304 250 L 318 248 L 330 262 L 342 247 L 357 253 Z"/>
+      <path class="snow" d="M640 188 L 604 221 L 622 217 L 640 234 L 656 215 L 677 223 Z"/>
+      <path class="snow" d="M1080 250 L 1055 271 L 1069 267 L 1082 280 L 1094 265 L 1107 272 Z"/>
+      <rect class="mist" x="0" y="300" width="1200" height="130" fill="url(#gMist)"/>
+      <!-- gunung tengah -->
+      <path class="mid" d="M0 420 C 100 380, 180 362, 260 380 S 400 330, 480 350 S 620 392, 700 362 S 860 322, 940 352 S 1100 382, 1200 362 V600 H0Z"/>
+      <!-- air terjun kecil -->
+      <path d="M697 364 C 699 392, 695 424, 692 452 L 712 452 C 709 424, 706 392, 708 364 Z" fill="url(#gFall)" opacity=".9"/>
+      <path class="streak" d="M700 366 L 696 450"/><path class="streak s2" d="M704 366 L 703 450"/><path class="streak s3" d="M707 366 L 710 450"/>
+      <!-- pohon cemara -->
+      <g class="tree">
+        <use href="#pine" transform="translate(120 452) scale(1.1)"/><use href="#pine" transform="translate(146 456) scale(.9)"/><use href="#pine" transform="translate(170 450) scale(1.25)"/>
+        <use href="#pine" transform="translate(372 462) scale(.95)"/><use href="#pine" transform="translate(396 458) scale(1.15)"/>
+        <use href="#pine" transform="translate(560 456) scale(.85)"/>
+        <use href="#pine" transform="translate(846 456) scale(1.2)"/><use href="#pine" transform="translate(872 460) scale(.9)"/><use href="#pine" transform="translate(898 452) scale(1.05)"/>
+        <use href="#pine" transform="translate(1050 450) scale(1.15)"/><use href="#pine" transform="translate(1076 456) scale(.9)"/>
+      </g>
+      <!-- bukit -->
+      <path class="hill" d="M0 472 C 140 442, 300 450, 420 464 S 640 442, 760 454 S 1000 472, 1200 450 V600 H0Z"/>
+      <!-- danau -->
+      <path d="M0 522 C 200 502, 400 500, 600 502 S 1000 506, 1200 520 V600 H0Z" fill="url(#gLake)"/>
+      <ellipse class="ripple"    cx="702" cy="522" rx="40" ry="7"/>
+      <ellipse class="ripple r2" cx="702" cy="522" rx="40" ry="7"/>
+      <ellipse class="ripple r3" cx="540" cy="556" rx="30" ry="5"/>
+      <g class="shimmer">
+        <path d="M480 536 h46"/><path d="M760 540 h56"/><path d="M600 562 h34"/><path d="M820 574 h40"/><path d="M420 578 h36"/><path d="M680 586 h48"/>
+      </g>
+    </svg>
+
+    <!-- bambu di tepi (kanan dicerminkan lewat JS) -->
+    <svg class="bamboo bamboo-l" id="bambooL" viewBox="0 0 120 600" preserveAspectRatio="xMinYMax meet">
+      <g class="stalk k3" opacity=".6">
+        <rect class="bb" x="66" y="-10" width="7" height="620" rx="3.5"/>
+        <rect class="bn" x="65" y="80" width="9" height="2.5"/><rect class="bn" x="65" y="165" width="9" height="2.5"/><rect class="bn" x="65" y="248" width="9" height="2.5"/>
+        <rect class="bn" x="65" y="332" width="9" height="2.5"/><rect class="bn" x="65" y="414" width="9" height="2.5"/><rect class="bn" x="65" y="498" width="9" height="2.5"/>
+        <use href="#leaf" class="lf" transform="translate(72 82) rotate(-28) scale(.7)"/><use href="#leaf" class="lf" transform="translate(72 84) rotate(6) scale(.75)"/>
+        <use href="#leaf" class="lf" transform="translate(72 250) rotate(-14) scale(.7)"/>
+      </g>
+      <g class="stalk k2" opacity=".85">
+        <rect class="bb" x="40" y="-10" width="9" height="620" rx="4.5"/>
+        <rect class="bn" x="39" y="42" width="11" height="3"/><rect class="bn" x="39" y="118" width="11" height="3"/><rect class="bn" x="39" y="196" width="11" height="3"/>
+        <rect class="bn" x="39" y="276" width="11" height="3"/><rect class="bn" x="39" y="356" width="11" height="3"/><rect class="bn" x="39" y="436" width="11" height="3"/><rect class="bn" x="39" y="516" width="11" height="3"/>
+        <use href="#leaf" class="lf" transform="translate(48 120) rotate(-30) scale(.85)"/><use href="#leaf" class="lf" transform="translate(48 122) rotate(4)"/>
+        <use href="#leaf" class="lf" transform="translate(48 358) rotate(-18) scale(.85)"/><use href="#leaf" class="lf" transform="translate(48 360) rotate(18) scale(.75)"/>
+      </g>
+      <g class="stalk">
+        <rect class="bb" x="12" y="-10" width="12" height="620" rx="6"/>
+        <rect class="bn" x="11" y="62" width="14" height="3.5"/><rect class="bn" x="11" y="142" width="14" height="3.5"/><rect class="bn" x="11" y="220" width="14" height="3.5"/>
+        <rect class="bn" x="11" y="300" width="14" height="3.5"/><rect class="bn" x="11" y="378" width="14" height="3.5"/><rect class="bn" x="11" y="458" width="14" height="3.5"/><rect class="bn" x="11" y="536" width="14" height="3.5"/>
+        <use href="#leaf" class="lf" transform="translate(23 64) rotate(-24)"/><use href="#leaf" class="lf" transform="translate(23 66) rotate(10) scale(1.1)"/>
+        <use href="#leaf" class="lf" transform="translate(23 222) rotate(-12) scale(.95)"/><use href="#leaf" class="lf" transform="translate(23 224) rotate(24)"/>
+        <use href="#leaf" class="lf" transform="translate(23 460) rotate(-20) scale(.9)"/>
+      </g>
+    </svg>
+
+    <canvas class="fx" id="fx"></canvas>
+    <div class="flash" id="flash"></div>
   </div>
 
   <div class="progress" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></div>
@@ -475,178 +433,191 @@
   <div class="app">
     <header class="topbar">
       <div class="top-left">
-        <button class="topback" id="btnBack" type="button" aria-label="Kembali ke pilihan" tabindex="-1">← Kembali</button>
-        <div class="me" id="meChip" aria-live="polite">
+        <button class="pill topback" id="btnBack" type="button" aria-label="Kembali ke pilihan">← Kembali</button>
+        <div class="pill me" id="meChip" aria-live="polite">
           <span class="me-avatar" id="meAvatar"></span>
           <span class="me-name" id="meName"></span>
         </div>
       </div>
-      <button class="bgm" id="btnBgm" type="button" aria-pressed="false" aria-label="Musik latar">
+      <button class="pill snd" id="btnSound" type="button" aria-pressed="false" aria-label="Musik latar">
         <span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>
-        <span id="bgmLabel">🎧 BGM Off</span>
+        <span id="soundLabel">🔇 BGM</span>
       </button>
     </header>
 
     <main class="stage">
 
-      <!-- LAYAR 1: Nama -->
-      <section class="screen active" id="s-welcome">
-        <div class="screen-inner center">
-          <div class="avatar-lg" id="avatarPreview" aria-hidden="true"><span id="avatarLetter">✦</span></div>
-          <h1>Halo, Selamat Datang! 👋</h1>
-          <p class="lead">Tulis nama atau panggilanmu untuk memulai perjalanan memori ini.</p>
-          <input class="name-input" id="nameInput" type="text" placeholder="Nama panggilanmu…" autocomplete="off" autocapitalize="words" enterkeyhint="go" aria-label="Nama atau panggilan">
-          <p class="privacy">🔒 Tenang, namamu cuma dipakai di layar ini. Tidak ada data yang disimpan atau dikirim ke mana pun.</p>
-          <p class="greet" id="greetLive" aria-live="polite"></p>
-          <button class="btn btn-primary" id="btnStart" type="button" disabled>Mulai perjalanan ✨</button>
+      <!-- BRIDGING (menyambung Scene 3 video V2) -->
+      <section class="screen active" id="s-intro">
+        <div class="screen-inner">
+          <div class="panel">
+            <div class="note-ico intro-line" style="--d:.1s" aria-hidden="true">📓<span class="pen">✏️</span></div>
+            <p class="kicker intro-line" style="--d:.3s">Aktivitas privat</p>
+            <h1 class="intro-line" style="--d:.6s">Video sebelumnya hanyalah sebagian kecil dari cerita seorang karyawan baru.</h1>
+            <p class="lead intro-line" style="--d:1.3s">Kini giliran kamu bercerita. Apa interaksi bersama atasan kamu di masa lalu yang membentuk cara kerja kamu di hari ini? Yuk, kita mulai!</p>
+            <button class="btn btn-primary intro-line" id="btnIntro" type="button" style="--d:2.5s">Mulai ✍️</button>
+            <p class="private intro-line" style="--d:2.7s">🔒 Privat, nggak dikumpulkan, dan nggak dinilai</p>
+          </div>
         </div>
       </section>
 
-      <!-- LAYAR 2 & 4: Pilihan -->
+      <!-- NAMA -->
+      <section class="screen" id="s-welcome">
+        <div class="screen-inner">
+          <div class="panel">
+            <div class="avatar-lg" id="avatarPreview" aria-hidden="true"><span id="avatarLetter">✦</span></div>
+            <h1>Halo, Selamat Datang! 👋</h1>
+            <p class="lead">Tulis nama atau panggilanmu untuk memulai perjalanan memori ini.</p>
+            <input class="name-input" id="nameInput" type="text" placeholder="Nama panggilanmu…" autocomplete="off" autocapitalize="words" enterkeyhint="go" aria-label="Nama atau panggilan">
+            <p class="privacy">🔒 Tidak ada data yang disimpan atau dikirim ke mana pun.</p>
+            <p class="greet" id="greetLive" aria-live="polite"></p>
+            <button class="btn btn-primary" id="btnStart" type="button" disabled>Mulai perjalanan ✨</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAHUN PERTAMA BEKERJA -->
+      <section class="screen" id="s-year">
+        <div class="screen-inner">
+          <div class="panel">
+            <div class="note-ico" aria-hidden="true">🗓️</div>
+            <h1 id="yearTitle"></h1>
+            <p class="lead">Coba ingat-ingat lagi tahun saat kamu pertama kali bergabung.</p>
+            <input class="name-input" id="yearInput" type="text" inputmode="numeric" maxlength="4" placeholder="Contoh: 2015" autocomplete="off" enterkeyhint="go" aria-label="Tahun pertama kali bekerja">
+            <p class="greet" id="yearLive" aria-live="polite"></p>
+            <button class="btn btn-primary" id="btnYear" type="button" disabled>Lanjut ✨</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- PILIHAN -->
       <section class="screen" id="s-choice">
         <div class="screen-inner">
-          <p class="kicker" id="choiceKicker"></p>
-          <h1 id="choiceTitle"></h1>
-          <p class="lead" id="choiceLead"></p>
-          <div class="choices">
-            <button class="choice warm" id="choiceGood" type="button" data-type="good">
-              <span class="choice-emoji" aria-hidden="true">☀️</span>
-              <span class="choice-body">
-                <span class="choice-title">Momen hangat</span>
-                <span class="choice-desc">Kebaikan kecil yang membuatmu merasa diterima di awal bekerja</span>
-              </span>
-              <span class="choice-status">Pilih</span>
-            </button>
-            <button class="choice cool" id="choiceBad" type="button" data-type="bad">
-              <span class="choice-emoji" aria-hidden="true">🌧️</span>
-              <span class="choice-body">
-                <span class="choice-title">Momen berat</span>
-                <span class="choice-desc">Hal yang terasa sulit atau kurang menyenangkan di awal bekerja</span>
-              </span>
-              <span class="choice-status">Pilih</span>
-            </button>
+          <div class="panel">
+            <p class="kicker" id="choiceKicker"></p>
+            <h1 id="choiceTitle"></h1>
+            <p class="lead" id="choiceLead"></p>
+            <div class="choices">
+              <button class="choice warm" id="choiceGood" type="button" data-type="good">
+                <span class="choice-head"><span class="choice-emoji" aria-hidden="true">☀️</span><span class="choice-title">Momen hangat</span></span>
+                <span class="choice-desc">Waktu atasanmu dulu bikin kamu merasa didengar, dipercaya, atau dikasih kesempatan</span>
+                <span class="choice-status">Pilih</span>
+              </button>
+              <button class="choice cool" id="choiceBad" type="button" data-type="bad">
+                <span class="choice-head"><span class="choice-emoji" aria-hidden="true">🌧️</span><span class="choice-title">Momen berat</span></span>
+                <span class="choice-desc">Waktu interaksi dengan atasanmu dulu ninggalin kesan nggak enak di hati</span>
+                <span class="choice-status">Pilih</span>
+              </button>
+            </div>
+            <p class="hint" id="choiceHint"></p>
           </div>
-          <p class="hint" id="choiceHint"></p>
         </div>
       </section>
 
-      <!-- LAYAR 3 & 5: Refleksi -->
+      <!-- REFLEKSI -->
       <section class="screen" id="s-reflect" data-tone="good">
         <div class="screen-inner">
-          <div class="reflect-wrap" id="reflectWrap">
+          <div class="panel reflect-wrap" id="reflectWrap">
             <span class="tag" id="reflectTag"></span>
             <h1 id="reflectTitle"></h1>
             <p class="lead" id="reflectLead"></p>
             <p class="label">Bingung mulai dari mana? Pilih salah satu 👇</p>
             <div class="chips" id="chips"></div>
-            <textarea class="memory" id="memoryInput" rows="3" placeholder="Tuliskan pengalamanmu secara singkat…" aria-label="Ceritakan pengalamanmu"></textarea>
+            <div class="write">
+              <textarea class="memory" id="memoryInput" rows="2" placeholder="Tulis singkat pengalamanmu dengan atasanmu waktu itu…" aria-label="Ceritakan pengalamanmu"></textarea>
+            </div>
             <p class="ta-hint" id="taHint" aria-live="polite"></p>
             <button class="btn btn-primary" id="btnSave" type="button" disabled>Simpan Memori 🔒</button>
           </div>
         </div>
       </section>
 
-      <!-- TRANSISI: Time Capsule -->
-      <section class="screen" id="s-capsule" data-tone="good">
-        <div class="screen-inner center">
-          <div class="capsule" id="capsule" aria-hidden="true">
-            <div class="orb orb-a"></div>
-            <div class="orb orb-b"></div>
-            <div class="orb orb-m"></div>
-            <div class="star"></div>
-          </div>
-          <p class="capsule-text" id="capsuleText"></p>
-          <p class="capsule-sub" id="capsuleSub"></p>
-        </div>
-      </section>
-
-      <!-- LANGKAH PERASAAN -->
+      <!-- PERASAAN -->
       <section class="screen" id="s-feel" data-tone="good">
         <div class="screen-inner">
-          <span class="tag" id="feelTag"></span>
-          <h1>Nah, waktu momen itu terjadi, perasaan apa yang muncul?</h1>
-          <p class="lead" id="feelLead"></p>
-          <p class="echo" id="feelEcho"></p>
-          <div class="feels" id="feels"></div>
+          <div class="panel">
+            <span class="tag" id="feelTag"></span>
+            <h1>Nah, pas kamu ngalamin itu, perasaan yang muncul kayak apa sih?</h1>
+            <p class="lead" id="feelLead"></p>
+            <p class="echo" id="feelEcho"></p>
+            <div class="feels" id="feels"></div>
+          </div>
         </div>
       </section>
 
-      <!-- PERTANYAAN REFLEKSI -->
+      <!-- PERTANYAAN -->
       <section class="screen" id="s-q" data-tone="good">
         <div class="screen-inner">
-          <div class="q-main" id="qMain">
+          <div class="panel q-main" id="qMain">
             <span class="tag" id="qTag"></span>
             <h1>Dari pengalaman tersebut, ada nggak sih yang berubah dari cara kerja kita? 💭</h1>
-            <p class="lead">Ceritakan saja apa adanya, sekecil apa pun perubahannya.</p>
+            <p class="lead" id="qLead"></p>
             <p class="echo" id="qEcho"></p>
-            <textarea class="memory" id="qInput" rows="3" placeholder="Tuliskan jawabanmu di sini…" aria-label="Jawaban refleksi"></textarea>
+            <div class="write">
+              <textarea class="memory" id="qInput" rows="2" placeholder="Tulis jawabanmu di sini…" aria-label="Jawaban refleksi"></textarea>
+            </div>
             <p class="ta-hint"></p>
             <button class="btn btn-primary" id="btnQ" type="button" disabled>Kirim jawaban 💫</button>
           </div>
         </div>
       </section>
 
-      <!-- LAYAR 6: Report card -->
+      <!-- KAPSUL WAKTU -->
+      <section class="screen" id="s-capsule" data-tone="good">
+        <div class="screen-inner">
+          <div class="panel dark capsule-panel">
+            <div class="saved-ico" aria-hidden="true">🔒</div>
+            <p class="capsule-text" id="capsuleText"></p>
+            <p class="capsule-sub" id="capsuleSub"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- KARTU MEMORI -->
       <section class="screen" id="s-report">
         <div class="screen-inner">
-          <p class="kicker center">Ini perjalananmu 🌙</p>
-          <article class="card" id="reportCard">
-            <header class="card-head">
-              <div class="avatar-sm" id="cardAvatar"></div>
-              <div style="min-width:0; max-width:100%">
-                <p class="card-kicker">📮 Kapsul memori hari pertamaku</p>
-                <h2 class="card-name" id="cardName"></h2>
-                <p class="card-date" id="cardDate"></p>
+          <div class="panel report-panel">
+            <article class="report-scroll" id="reportCard">
+              <p class="card-kicker">📮 Kapsul memori: aku dan atasanku dulu</p>
+              <header class="card-head">
+                <div class="avatar-sm" id="cardAvatar"></div>
+                <div class="card-id">
+                  <h2 class="card-name" id="cardName"></h2>
+                  <p class="card-date" id="cardDate"></p>
+                </div>
+              </header>
+              <div class="card-sec" data-tone="good">
+                <span class="tag">☀️ Momen hangat</span>
+                <p id="cardGood"></p>
+                <p class="card-feel" id="cardGoodFeel"></p>
               </div>
-            </header>
-            <div class="card-sec" data-tone="good">
-              <span class="tag">☀️ Momen hangat</span>
-              <p id="cardGood"></p>
-              <p class="card-feel" id="cardGoodFeel"></p>
+              <div class="card-sec" data-tone="bad">
+                <span class="tag">🌧️ Momen berat</span>
+                <p id="cardBad"></p>
+                <p class="card-feel" id="cardBadFeel"></p>
+              </div>
+              <blockquote class="card-quote" id="cardQuote"></blockquote>
+              <div class="card-foot">© Education and Training Departement 2026</div>
+            </article>
+            <div class="actions" style="grid-template-columns:1fr">
+              <button class="btn btn-primary" id="btnFinish" type="button">Selesai</button>
             </div>
-            <div class="card-sec" data-tone="bad">
-              <span class="tag">🌧️ Momen berat</span>
-              <p id="cardBad"></p>
-              <p class="card-feel" id="cardBadFeel"></p>
-            </div>
-            <blockquote class="card-quote" id="cardQuote"></blockquote>
-            <div class="card-foot">
-              <span>Education and Training Departement 2026</span>
-              <span>🤍</span>
-            </div>
-          </article>
-          <div class="actions">
-            <button class="btn btn-primary" id="btnDownload" type="button">⬇️ Unduh kartu</button>
-            <button class="btn btn-ghost" id="btnFinish" type="button" disabled aria-describedby="finishHint">Selesai</button>
           </div>
-          <p class="finish-hint" id="finishHint">⬇️ Unduh kartumu dulu, ya. Setelah itu tombol Selesai bisa diklik.</p>
         </div>
       </section>
 
     </main>
+    <footer class="copy"><span>© Education and Training Departement 2026</span></footer>
   </div>
 
   <!-- Fade to black -->
   <div class="blackout" id="blackout" aria-live="polite">
     <p class="bo-line bo-1" id="bo1">Tarik napas perlahan…</p>
-    <p class="bo-line bo-2" id="bo2">Ingat lagi rasanya menjadi orang baru. Dari situlah empati seorang pemimpin bermula. 🤍</p>
-  </div>
-
-  <!-- Cadangan unduhan: simpan gambar manual -->
-  <div class="save-sheet" id="saveSheet" role="dialog" aria-modal="true" aria-labelledby="saveTitle">
-    <div class="save-box">
-      <p class="save-title" id="saveTitle">Kartu memorimu siap 📥</p>
-      <p class="save-desc">Kalau unduhan belum mulai, <b>tekan lama</b> gambar di bawah (atau klik kanan di laptop), lalu pilih <b>Simpan Gambar</b>.</p>
-      <img class="save-img" id="saveImg" alt="Kartu memori">
-      <div class="actions">
-        <button class="btn btn-primary" id="saveRetry" type="button">⬇️ Unduh lagi</button>
-        <button class="btn btn-ghost" id="saveClose" type="button">Tutup</button>
-      </div>
-    </div>
+    <p class="bo-line bo-2" id="bo2">Simpan dulu dua momen itu baik-baik. Yuk, kita lanjutkan videonya. 🤍</p>
   </div>
 
   <div class="toast" id="toast" role="status"></div>
-  <footer class="copy">© Education and Training Departement 2026</footer>
+</div><!-- /frame -->
 
 <script>
 (function(){
@@ -657,15 +628,17 @@
   try { window.top.postMessage("scoreBarFound", "*"); } catch(e){}
 
   const $ = id => document.getElementById(id);
+  const R = (a, b) => a + Math.random() * (b - a);
 
-  /* ===== Konten & copywriting ===== */
-  const QUOTE = "Kamu pernah jadi orang baru. Kehangatan yang dulu kamu terima, kini bisa kamu teruskan. Rasa berat yang dulu kamu alami, kini bisa kamu cegah agar tak dirasakan orang lain.";
+  /* ===== Konten & copywriting (selaras naskah V2) ===== */
+  const QUOTE = "Dua momen ini pernah singgah di awal perjalanan kerjamu. Simpan baik-baik, ya. Nanti kita lihat lagi bareng di video.";
 
   const CONTENT = {
     good: {
       tag: "☀️ Momen hangat",
-      title: n => `${n}, siapa yang dulu membuatmu merasa diterima?`,
-      lead: "Coba pejamkan mata sebentar. Ingat lagi hari-hari pertamamu. Mungkin ada sapaan, senyum, atau uluran tangan kecil yang masih membekas sampai sekarang.",
+      title: "Momen apa bersama atasanmu dulu yang ninggalin kesan baik?",
+      lead: "Waktu kamu baru masuk kerja. Misalnya saat kamu didengar, dipuji, dikasih kesempatan kasih saran, atau dipercaya.",
+      qLead: "Mungkin jadi lebih berani nanya, nggak khawatir nyoba hal baru, lebih semangat, lebih teliti. Atau ya, kerja kayak biasanya aja.",
       chips: [
         "Saat saya belum mengenal banyak orang, saya dibantu ....",
         "Saat hari pertama bekerja, saya disambut ...",
@@ -675,8 +648,9 @@
     },
     bad: {
       tag: "🌧️ Momen berat",
-      title: n => `${n}, apa yang dulu terasa berat untukmu?`,
-      lead: "Canggung, bingung, atau merasa sendirian itu wajar dialami orang baru. Ceritakan dengan jujur, ruang ini aman untukmu. 🤍",
+      title: "Momen apa bersama atasanmu dulu yang ninggalin kesan nggak enak?",
+      lead: "Waktu kamu baru masuk kerja. Misalnya saat masukanmu nggak didengar, jenuh cuma jalanin rutinitas, atau dimarahi sampai serba salah.",
+      qLead: "Apa kamu masih aktif nanya dan kasih ide? Jadi lebih hati-hati? Milih diam dan nunggu arahan? Atau sebenarnya nggak ada yang berubah?",
       chips: [
         "Saat saya belum mengenal banyak orang, saya merasa ....",
         "Saat hari pertama bekerja, saya ...",
@@ -687,32 +661,29 @@
 
   const FEELS = {
     good: {
-      lead: "Tidak ada jawaban benar atau salah. Pilih yang paling dekat dengan rasamu saat itu.",
+      lead: "Pilih yang paling dekat dengan rasamu waktu itu.",
       options: [
         { e:"🥰", t:"Senang!", d:"Mood bagus seharian" },
-        { e:"🙂", t:"Biasa saja", d:"Terasa wajar-wajar saja" },
+        { e:"🙂", t:"Biasa saja", d:"Terasa wajar aja" },
         { e:"😶", t:"Cuek", d:"Nggak terlalu dipikirin" }
       ]
     },
     bad: {
       lead: "Semua rasa itu valid. Pilih yang paling dekat dengan rasamu waktu itu.",
       options: [
-        { e:"😞", t:"Kecewa", d:"Rasanya nggak sesuai harapan" },
+        { e:"😞", t:"Kecewa", d:"Nggak sesuai harapan" },
         { e:"😐", t:"Biasa saja", d:"Dijalani apa adanya" },
-        { e:"🤔", t:"Introspeksi", d:"Jadi bahan memperbaiki diri" }
+        { e:"🤔", t:"Introspeksi", d:"Jadi bahan perbaikan diri" }
       ]
     }
   };
 
   /* ===== State ===== */
-  const state = { name:"", good:"", bad:"", goodFeel:"", badFeel:"", goodChange:"", badChange:"", type:null };
-  let selectedTpl = null;
-  let busy = false;
-  let currentScreen = $("s-welcome");
-  const timers = [];
-  const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
+  const state = { name:"", year:"", good:"", bad:"", goodFeel:"", badFeel:"", goodChange:"", badChange:"", type:null };
+  let selectedTpl = null, busy = false, currentScreen = $("s-intro");
+  const later = (fn, ms) => setTimeout(fn, ms);
+  const doneCount = () => (state.good ? 1 : 0) + (state.bad ? 1 : 0);
 
-  /* ===== Navigasi antar layar (fade out → fade in) ===== */
   function go(id, onShown){
     const next = $(id);
     if (next === currentScreen){ if (onShown) onShown(); return; }
@@ -725,125 +696,338 @@
       next.classList.add("active");
       later(() => { busy = false; }, 400);
       if (onShown) onShown();
-    }, 620);
+    }, 580);
   }
-  function showBack(show){
-    const b = $("btnBack");
-    b.classList.toggle("shown", show);
-    b.tabIndex = show ? 0 : -1;
-  }
+  function showBack(show){ $("btnBack").classList.toggle("shown", show); }
   function setProgress(p){ $("progressFill").style.width = p + "%"; }
-  function initialOf(n){
-    const ch = Array.from(String(n).trim())[0] || "";
-    return ch.toLocaleUpperCase("id-ID");
-  }
+  function initialOf(n){ return (Array.from(String(n).trim())[0] || "").toLocaleUpperCase("id-ID"); }
   function toast(msg){
     const t = $("toast");
-    t.textContent = msg;
-    t.classList.add("show");
-    clearTimeout(toast._t);
-    toast._t = setTimeout(() => t.classList.remove("show"), 2600);
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 2600);
   }
 
-  /* ===== Background hujan =====
-     Default: animasi hujan canvas (pure HTML, tanpa file).
-     Kalau suatu saat ingin pakai video, isi RAIN_VIDEO dengan nama/URL file, mis. "hujan.mp4". */
-  const RAIN_VIDEO = "";
+  /* ===================================================================
+     SUARA (Web Audio, tanpa file) — chill, tanpa suara angin/noise:
+     pad lembut + nada piano tipis + rintik hujan kecil.
+     Cerah: kicau burung. Hujan: rintik lebih rapat + guntur pelan.
+     =================================================================== */
+  const Snd = (() => {
+    let ctx = null, master, musicBus, ambBus, sfxBus, dripLP, brownBuf, on = false, timer = null, mode = "calm";
+    let nextChord = 0, chordIdx = 0, nextKey = 0, nextDrip = 0, nextBird = 0;
+    const CHORDS = [[48,55,59,62,64],[45,52,57,60,64],[41,48,57,60,64],[43,50,55,59,62]];  // Cmaj9, Am9, Fmaj9, G6/9
+    const PENTA = [72,74,76,79,81,84];
+    const DRIP_RATE = { calm:3.2, good:0, bad:9 };
+    const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
 
-  if (RAIN_VIDEO){
-    $("rainCanvas").remove();
-    const vid = document.createElement("video");
-    vid.className = "bg-video";
-    Object.assign(vid, { src:RAIN_VIDEO, autoplay:true, muted:true, loop:true, playsInline:true });
-    vid.setAttribute("playsinline", ""); vid.setAttribute("muted", "");
-    vid.addEventListener("error", () => { vid.style.display = "none"; });
-    $("bgLayer").prepend(vid);
-    const tryPlay = () => { const p = vid.play(); if (p && p.catch) p.catch(() => {}); };
-    tryPlay();
-    document.addEventListener("pointerdown", tryPlay, { once:true });
-  } else {
-    startRain($("rainCanvas"));
-  }
+    function init(){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return false;
+      ctx = new AC();
+      master = ctx.createGain(); master.gain.value = 0;
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -18; comp.knee.value = 18; comp.ratio.value = 3;
+      comp.connect(master); master.connect(ctx.destination);
 
-  function startRain(canvas){
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const SLANT = -0.16;                       // kemiringan hujan (gerak sedikit ke kiri)
-    // 3 lapis kedalaman: jauh (tipis, pelan) → dekat (lebih tebal, cepat)
-    const LAYERS = [
-      { w:.6,  a:.35, v:[7, 10],  len:[10, 16] },
-      { w:.9,  a:.55, v:[11, 15], len:[16, 26] },
-      { w:1.25,a:.8,  v:[16, 21], len:[24, 36] }
-    ];
-    const speedK = reduce ? .35 : 1;
-    let W = 0, H = 0, drops = [], raf = null, last = 0, resizeT = null;
-    const rand = (a, b) => a + Math.random() * (b - a);
+      const rvIn = ctx.createGain();
+      const rvLP = ctx.createBiquadFilter(); rvLP.type = "lowpass"; rvLP.frequency.value = 1800;
+      const rvOut = ctx.createGain(); rvOut.gain.value = .3;
+      [.27, .41].forEach(tm => {
+        const d = ctx.createDelay(1); d.delayTime.value = tm;
+        const fb = ctx.createGain(); fb.gain.value = .33;
+        rvIn.connect(d); d.connect(rvLP); d.connect(fb); fb.connect(d);
+      });
+      rvLP.connect(rvOut); rvOut.connect(comp);
 
-    function makeDrop(li, anywhere){
-      const l = LAYERS[li];
-      return {
-        li,
-        x: rand(-20, W + H * Math.abs(SLANT) + 20),
-        y: anywhere ? rand(-H, H) : rand(-80, -10),
-        v: rand(l.v[0], l.v[1]) * speedK,
-        len: rand(l.len[0], l.len[1])
-      };
+      const musicLP = ctx.createBiquadFilter(); musicLP.type = "lowpass"; musicLP.frequency.value = 1500;
+      musicBus = ctx.createGain(); musicBus.gain.value = 1;
+      musicBus.connect(musicLP); musicLP.connect(comp);
+      const ms = ctx.createGain(); ms.gain.value = .6; musicLP.connect(ms); ms.connect(rvIn);
+
+      ambBus = ctx.createGain(); ambBus.gain.value = 1; ambBus.connect(comp);
+      const as = ctx.createGain(); as.gain.value = .35; ambBus.connect(as); as.connect(rvIn);
+      dripLP = ctx.createBiquadFilter(); dripLP.type = "lowpass"; dripLP.frequency.value = 6000; dripLP.connect(ambBus);
+      sfxBus = ctx.createGain(); sfxBus.connect(comp);
+      const ss = ctx.createGain(); ss.gain.value = .4; sfxBus.connect(ss); ss.connect(rvIn);
+
+      // buffer untuk guntur (hanya dipakai sesekali, sangat rendah)
+      const len = ctx.sampleRate * 5; brownBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d = brownBuf.getChannelData(0); let lv = 0;
+      for (let i = 0; i < len; i++){ lv = (lv + .02 * (Math.random() * 2 - 1)) / 1.02; d[i] = lv * 3.2; }
+      return true;
     }
-    function build(){
-      const n = Math.min(420, Math.round(W * H / 5200));
-      drops = [];
+
+    function pad(t, chord, dur){
+      chord.forEach((m, i) => {
+        [[ "sine", -5], [ "triangle", 5 ]].forEach(([type, det]) => {
+          const o = ctx.createOscillator(); o.type = type; o.frequency.value = mtof(m); o.detune.value = det;
+          const g = ctx.createGain();
+          const v = type === "sine" ? .016 : .007;
+          g.gain.setValueAtTime(0, t);
+          g.gain.linearRampToValueAtTime(v, t + 2.4 + i * .1);
+          g.gain.setValueAtTime(v, t + dur - 2.6);
+          g.gain.linearRampToValueAtTime(0, t + dur);
+          o.connect(g); g.connect(musicBus); o.start(t); o.stop(t + dur + .1);
+        });
+      });
+    }
+    function key(t, midi, v, out){
+      const f = mtof(midi), g = ctx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(v, t + .012);
+      g.gain.exponentialRampToValueAtTime(.0001, t + 2.4);
+      const o1 = ctx.createOscillator(); o1.frequency.value = f;
+      const o2 = ctx.createOscillator(); o2.frequency.value = f * 2;
+      const g2 = ctx.createGain(); g2.gain.value = .12;
+      o1.connect(g); o2.connect(g2); g2.connect(g); g.connect(out || musicBus);
+      o1.start(t); o2.start(t); o1.stop(t + 2.5); o2.stop(t + 2.5);
+    }
+    // rintik: tetesan kecil bernada (bukan noise) → halus, tidak "kresek"
+    function drip(t, v){
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.value = R(3200, 5200);          // nada datar & sangat singkat → "tik", bukan "blub"
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(v, t + .002);
+      g.gain.exponentialRampToValueAtTime(.0001, t + R(.012, .022));
+      o.connect(g); g.connect(dripLP); o.start(t); o.stop(t + .03);
+    }
+    function birdCall(t){
+      const out = ctx.createGain(); out.gain.value = R(.6, 1);
+      if (ctx.createStereoPanner){ const p = ctx.createStereoPanner(); p.pan.value = R(-.8, .8); out.connect(p); p.connect(ambBus); }
+      else out.connect(ambBus);
+      const kind = Math.floor(R(0, 3)), n = 2 + Math.floor(R(0, 4)), base = R(2500, 4100);
+      let tt = t;
       for (let i = 0; i < n; i++){
-        const r = Math.random();
-        drops.push(makeDrop(r < .5 ? 0 : r < .82 ? 1 : 2, true));
+        const o = ctx.createOscillator(), g = ctx.createGain(), d = R(.05, .11);
+        const f1 = kind === 0 ? base : kind === 1 ? base * 1.25 : base * R(.9, 1.2);
+        const f2 = kind === 0 ? f1 * 1.35 : kind === 1 ? f1 * .72 : f1 * R(1.1, 1.5);
+        o.frequency.setValueAtTime(f1, tt); o.frequency.exponentialRampToValueAtTime(f2, tt + d);
+        g.gain.setValueAtTime(0, tt); g.gain.linearRampToValueAtTime(R(.011, .02), tt + .01); g.gain.exponentialRampToValueAtTime(.0001, tt + d);
+        o.connect(g); g.connect(out); o.start(tt); o.stop(tt + d + .02);
+        tt += d + R(.03, .09);
       }
+    }
+    // guntur pelan: gemuruh rendah singkat, tanpa letupan keras
+    function thunder(t){
+      const s = ctx.createBufferSource(); s.buffer = brownBuf;
+      const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 160; lp.Q.value = .7;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(.12, t + .45);
+      g.gain.exponentialRampToValueAtTime(.0001, t + 3.6);
+      s.connect(lp); lp.connect(g); g.connect(ambBus);
+      s.start(t, R(0, 1)); s.stop(t + 3.8);
+    }
+
+    function tick(){
+      const ahead = ctx.currentTime + .5;
+      while (nextChord < ahead){ pad(nextChord, CHORDS[chordIdx++ % CHORDS.length], 9); nextChord += 8; }
+      while (nextKey < ahead){
+        key(nextKey, PENTA[Math.floor(R(0, PENTA.length))], R(.016, .028));
+        if (Math.random() < .3) key(nextKey + R(.25, .5), PENTA[Math.floor(R(0, PENTA.length))], .014);
+        nextKey += R(1.8, 3.6);
+      }
+      const rate = DRIP_RATE[mode];
+      if (rate > 0){
+        while (nextDrip < ahead){ drip(nextDrip, R(.003, .009) * (mode === "bad" ? 1.2 : 1)); nextDrip += -Math.log(1 - Math.random()) / rate; }
+      } else nextDrip = ahead;
+      if (mode === "good"){
+        while (nextBird < ahead){ birdCall(nextBird); nextBird += R(.9, 2.6); }
+      } else nextBird = ahead;
+    }
+
+    async function start(){
+      if (!ctx && !init()) return false;
+      try { if (ctx.state === "suspended") await ctx.resume(); } catch(e){ return false; }
+      const now = ctx.currentTime;
+      master.gain.cancelScheduledValues(now);
+      master.gain.setValueAtTime(master.gain.value, now);
+      master.gain.linearRampToValueAtTime(.9, now + 2.5);
+      nextChord = now + .1; nextKey = now + 2; nextDrip = now + .3; nextBird = now + .5;
+      clearInterval(timer); timer = setInterval(tick, 150); tick();
+      on = true; return true;
+    }
+    function stop(fade){
+      if (!ctx || !on) return;
+      fade = fade || .9; on = false; clearInterval(timer);
+      const now = ctx.currentTime;
+      master.gain.cancelScheduledValues(now);
+      master.gain.setValueAtTime(master.gain.value, now);
+      master.gain.linearRampToValueAtTime(0, now + fade);
+      setTimeout(() => { if (!on) ctx.suspend().catch(() => {}); }, fade * 1000 + 300);
+    }
+    function setMode(m){ mode = m; }
+    function thunderIn(sec){ if (on && ctx) thunder(ctx.currentTime + sec); }
+    function sfx(type){
+      if (!on || !ctx) return;
+      const t = ctx.currentTime + .01;
+      if (type === "chime"){ key(t, 79, .018, sfxBus); key(t + .18, 84, .014, sfxBus); }
+    }
+    return { start, stop, setMode, thunderIn, sfx, isOn: () => on };
+  })();
+
+  const btnSound = $("btnSound");
+  function setSoundUI(isOn){
+    btnSound.classList.toggle("on", isOn);
+    btnSound.setAttribute("aria-pressed", String(isOn));
+    $("soundLabel").textContent = isOn ? "🔊 BGM" : "🔇 BGM";
+  }
+  btnSound.addEventListener("click", async () => {
+    if (Snd.isOn()){ Snd.stop(); setSoundUI(false); }
+    else { const ok = await Snd.start(); setSoundUI(ok); if (!ok) toast("Browser ini belum mendukung audio 🙏"); }
+  });
+
+  /* ===================================================================
+     CUACA: calm = cuaca biasa, good = sangat cerah + banyak burung,
+     bad = hujan + kilat lembut (frekuensi rendah, tidak berkedip cepat)
+     =================================================================== */
+  (function(){ const r = $("bambooL").cloneNode(true); r.id = "bambooR"; r.classList.replace("bamboo-l", "bamboo-r"); $("bambooL").after(r); })();
+
+  const Scene = (() => {
+    const frame = $("frame"), canvas = $("fx"), ctx = canvas.getContext("2d");
+    const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const speed = reduce ? .35 : 1;
+    const lv = { calm:1, good:0, bad:0 }, target = { calm:1, good:0, bad:0 };
+    let W = 0, H = 0, raf = null, last = 0, t = 0, resizeT = null, mode = "calm", boltT = null;
+    let birds = [], drops = [], rings = [], bolt = null;
+
+    const mkBird = (grp, any) => {
+      const far = grp === "calm";
+      return { grp, x:any ? R(0, W) : R(-120, -20), y:R(H * (far ? .12 : .1), H * (far ? .3 : .42)),
+        s:far ? R(3, 5) : R(7, 13), vx:far ? R(.25, .45) : R(.7, 1.5), ph:R(0, 6.28), fs:R(.18, .3), bob:R(4, 10) };
+    };
+    const mkDrop = any => ({ x:R(-20, W + 60), y:any ? R(-H, H) : R(-60, -10), v:R(9, 14), len:R(10, 22), w:Math.random() < .6 ? .8 : 1.15 });
+
+    function build(){
+      const area = W * H;
+      birds = [];
+      for (let i = 0; i < 3; i++) birds.push(mkBird("calm", true));
+      // burung di cuaca cerah: sebagian terbang sendiri, sebagian berkelompok
+      const n = Math.min(14, Math.max(8, Math.round(W / 70)));
+      for (let i = 0; i < n; i++) birds.push(mkBird("good", true));
+      for (let f = 0; f < 2; f++){
+        const lead = mkBird("good", true);
+        for (let j = 0; j < 4; j++) birds.push(Object.assign({}, lead, { x:lead.x - j * 22, y:lead.y + (j % 2 ? 1 : -1) * j * 9, s:lead.s * R(.85, 1), ph:lead.ph + j * .6 }));
+      }
+      drops = Array.from({ length:Math.min(260, Math.round(area / 2600)) }, () => mkDrop(true));
+      rings = [];
     }
     function resize(){
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      W = window.innerWidth; H = window.innerHeight;
+      W = frame.clientWidth || window.innerWidth; H = frame.clientHeight || 600;
       canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.lineCap = "round";
       build();
     }
-    function frame(now){
-      const dt = Math.min((now - last) / 16.67, 3);
-      last = now;
-      ctx.clearRect(0, 0, W, H);
-      for (let li = 0; li < LAYERS.length; li++){
-        const l = LAYERS[li];
+    function drawBirds(dt){
+      ctx.lineCap = "round"; ctx.lineJoin = "round";
+      for (let i = 0; i < birds.length; i++){
+        const b = birds[i], k = lv[b.grp];
+        b.x += b.vx * dt; b.ph += b.fs * dt;
+        if (b.x > W + 40){ birds[i] = mkBird(b.grp, false); continue; }
+        if (k < .01) continue;
+        const y = b.y + Math.sin(b.ph * .15) * b.bob;
+        const flap = Math.sin(b.ph) * .7;
+        ctx.strokeStyle = `rgba(32,48,56,${(b.grp === "calm" ? .45 : .75) * k})`;
+        ctx.lineWidth = b.grp === "calm" ? 1.2 : 1.8;
         ctx.beginPath();
-        ctx.strokeStyle = `rgba(205,215,235,${l.a})`;
-        ctx.lineWidth = l.w;
-        for (let i = 0; i < drops.length; i++){
-          let d = drops[i];
-          if (d.li !== li) continue;
-          d.y += d.v * dt;
-          d.x += d.v * SLANT * dt;
-          if (d.y - d.len > H || d.x < -60){ d = drops[i] = makeDrop(li, false); }
-          ctx.moveTo(d.x, d.y);
-          ctx.lineTo(d.x - d.len * SLANT, d.y - d.len);
-        }
+        ctx.moveTo(b.x - b.s, y - b.s * flap);
+        ctx.quadraticCurveTo(b.x - b.s * .45, y - b.s * .2, b.x, y);
+        ctx.quadraticCurveTo(b.x + b.s * .45, y - b.s * .2, b.x + b.s, y - b.s * flap);
         ctx.stroke();
       }
-      raf = requestAnimationFrame(frame);
     }
-    function play(){ if (raf === null){ last = performance.now(); raf = requestAnimationFrame(frame); } }
+    function drawRain(dt, k){
+      const SL = -.14;
+      ctx.lineCap = "round";
+      [[.8, .35], [1.15, .55]].forEach(([w, al]) => {
+        ctx.beginPath(); ctx.lineWidth = w; ctx.strokeStyle = `rgba(226,236,246,${al * k})`;
+        for (let i = 0; i < drops.length; i++){
+          let d = drops[i];
+          if (d.w !== w) continue;
+          d.y += d.v * dt; d.x += d.v * SL * dt;
+          if (d.y - d.len > H || d.x < -60){ d = drops[i] = mkDrop(false); }
+          ctx.moveTo(d.x, d.y); ctx.lineTo(d.x - d.len * SL, d.y - d.len);
+        }
+        ctx.stroke();
+      });
+      // riak hujan di danau
+      if (Math.random() < .35 * dt * k) rings.push({ x:R(0, W), y:R(H * .87, H * .99), r:1, a:.6 });
+      ctx.lineWidth = 1;
+      for (let i = rings.length - 1; i >= 0; i--){
+        const g = rings[i]; g.r += .35 * dt; g.a -= .012 * dt;
+        if (g.a <= 0){ rings.splice(i, 1); continue; }
+        ctx.strokeStyle = `rgba(220,232,242,${g.a * k})`;
+        ctx.beginPath(); ctx.ellipse(g.x, g.y, g.r * 2.2, g.r * .55, 0, 0, 6.283); ctx.stroke();
+      }
+    }
+    function drawBolt(dt){
+      if (!bolt) return;
+      bolt.life -= dt;
+      if (bolt.life <= 0){ bolt = null; return; }
+      const a = Math.min(1, bolt.life / 6) * .85;
+      ctx.strokeStyle = `rgba(245,248,255,${a})`; ctx.lineWidth = 2;
+      ctx.shadowColor = "rgba(200,215,255,.9)"; ctx.shadowBlur = 12;
+      ctx.beginPath(); bolt.pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+    function strike(){
+      if (mode !== "bad") return;
+      if (!reduce){
+        const f = $("flash"); f.classList.remove("go"); void f.offsetWidth; f.classList.add("go");
+        let x = R(W * .15, W * .85), y = R(H * .05, H * .12);
+        const pts = [[x, y]];
+        while (y < H * R(.32, .42)){ x += R(-16, 16); y += R(14, 26); pts.push([x, y]); }
+        bolt = { pts, life:14 };
+      }
+      Snd.thunderIn(R(.8, 1.6));
+      boltT = setTimeout(strike, R(8000, 14000));
+    }
+    function loop(now){
+      const dt = Math.min((now - last) / 16.67, 3) * speed; last = now; t += dt;
+      for (const key in lv) lv[key] += (target[key] - lv[key]) * Math.min(1, .03 * dt);
+      ctx.clearRect(0, 0, W, H);
+      drawBirds(dt);
+      if (lv.bad > .01) drawRain(dt, lv.bad);
+      drawBolt(dt);
+      raf = requestAnimationFrame(loop);
+    }
+    function play(){ if (raf === null){ last = performance.now(); raf = requestAnimationFrame(loop); } }
     function pause(){ if (raf !== null){ cancelAnimationFrame(raf); raf = null; } }
 
-    resize();
-    play();
-    window.addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(resize, 150); });
+    resize(); play();
+    const onResize = () => { clearTimeout(resizeT); resizeT = setTimeout(resize, 150); };
+    window.addEventListener("resize", onResize);
+    if (window.ResizeObserver) new ResizeObserver(onResize).observe(frame);
     document.addEventListener("visibilitychange", () => { document.hidden ? pause() : play(); });
-  }
 
-  /* ===== LAYAR 1 ===== */
+    function set(m){
+      if (m === mode) return;
+      mode = m;
+      for (const key in target) target[key] = key === m ? 1 : 0;
+      frame.dataset.scene = m;
+      Snd.setMode(m);
+      clearTimeout(boltT);
+      if (m === "bad") boltT = setTimeout(strike, 2200);
+    }
+    return { set };
+  })();
+
+  /* ===== BRIDGING ===== */
+  function playIntro(){ const s = $("s-intro"); s.classList.remove("play"); void s.offsetWidth; s.classList.add("play"); }
+  playIntro();
+  $("btnIntro").addEventListener("click", async () => {
+    if (busy) return;
+    if (!Snd.isOn()){ const ok = await Snd.start(); setSoundUI(ok); }
+    setProgress(6);
+    go("s-welcome");
+  });
+
+  /* ===== NAMA ===== */
   const nameInput = $("nameInput");
   let lastLetter = "";
   nameInput.addEventListener("input", () => {
-    const n = nameInput.value.trim();
-    const L = initialOf(n);
-    const av = $("avatarPreview");
+    const n = nameInput.value.trim(), L = initialOf(n), av = $("avatarPreview");
     if (L !== lastLetter){
       $("avatarLetter").textContent = L || "✦";
       av.classList.toggle("filled", !!L);
@@ -853,12 +1037,9 @@
     }
     $("btnStart").disabled = !n;
     const g = $("greetLive");
-    if (n){ g.textContent = `Senang bertemu kamu, ${n} ✨`; g.classList.add("show"); }
-    else { g.classList.remove("show"); }
+    if (n){ g.textContent = `Senang bertemu kamu, ${n} ✨`; g.classList.add("show"); } else g.classList.remove("show");
   });
-  nameInput.addEventListener("keydown", e => {
-    if (e.key === "Enter" && !e.isComposing){ e.preventDefault(); startJourney(); }
-  });
+  nameInput.addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing){ e.preventDefault(); startJourney(); } });
   $("btnStart").addEventListener("click", startJourney);
 
   function startJourney(){
@@ -869,31 +1050,55 @@
     $("meAvatar").textContent = initialOf(n);
     $("meName").textContent = n;
     $("meChip").classList.add("show");
+    $("yearTitle").textContent = `${n}, tahun berapa kamu pertama kali bekerja di Indomaret Group?`;
+    setProgress(10);
+    go("s-year");
+  }
+
+  /* ===== TAHUN PERTAMA BEKERJA ===== */
+  const yearInput = $("yearInput");
+  const THIS_YEAR = new Date().getFullYear();
+  function yearValid(){ const y = +yearInput.value; return /^\d{4}$/.test(yearInput.value) && y >= 1945 && y <= THIS_YEAR; }
+  yearInput.addEventListener("input", () => {
+    yearInput.value = yearInput.value.replace(/\D/g, "").slice(0, 4);
+    const ok = yearValid(), live = $("yearLive");
+    $("btnYear").disabled = !ok;
+    if (ok){
+      const d = THIS_YEAR - (+yearInput.value);
+      live.textContent = d === 0 ? "Wah, masih di tahun pertama perjalananmu ✨" : `Wah, sudah sekitar ${d} tahun perjalananmu ✨`;
+      live.classList.add("show");
+    } else if (yearInput.value.length === 4){
+      live.textContent = `Tulis tahun antara 1945 dan ${THIS_YEAR}, ya.`; live.classList.add("show");
+    } else live.classList.remove("show");
+  });
+  yearInput.addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing){ e.preventDefault(); submitYear(); } });
+  $("btnYear").addEventListener("click", submitYear);
+  function submitYear(){
+    if (!yearValid() || busy) return;
+    state.year = yearInput.value;
+    yearInput.blur();
     renderChoice();
     setProgress(15);
     go("s-choice");
   }
 
-  /* ===== LAYAR 2 / 4 ===== */
+  /* ===== PILIHAN ===== */
   function renderChoice(){
-    const done = (state.good ? 1 : 0) + (state.bad ? 1 : 0);
     const n = state.name;
-    if (done === 0){
-      $("choiceKicker").textContent = "Cerita 1 dari 2";
-      $("choiceTitle").textContent = `${n}, setiap awal selalu punya dua cerita.`;
-      $("choiceLead").textContent = "Ada hari yang terasa hangat, ada juga yang terasa berat. Keduanya ikut membentuk dirimu hari ini. Mana yang ingin kamu ceritakan lebih dulu?";
+    if (doneCount() === 0){
+      $("choiceKicker").textContent = "Momen 1 dari 2";
+      $("choiceTitle").textContent = `${n}, ingat lagi tahun ${state.year}, waktu kamu masih jadi karyawan baru.`;
+      $("choiceLead").textContent = "Gimana atasanmu waktu itu merespons kamu? Pilih momen yang mau kamu tulis duluan. Jawab yang spontan aja, ya.";
       $("choiceHint").textContent = "";
     } else {
-      $("choiceKicker").textContent = "Cerita 2 dari 2";
-      $("choiceTitle").textContent = "Satu cerita sudah tersimpan 🤍";
-      $("choiceLead").textContent = `Terima kasih sudah jujur, ${n}. Sekarang, mari tengok sisi yang satunya lagi.`;
+      $("choiceKicker").textContent = "Momen 2 dari 2";
+      $("choiceTitle").textContent = "Satu momen sudah tersimpan 🤍";
+      $("choiceLead").textContent = `Makasih udah jujur, ${n}. Sekarang, yuk tulis momen yang satunya lagi.`;
       $("choiceHint").textContent = "Tinggal satu lagi ✨";
     }
-    [["good","choiceGood"],["bad","choiceBad"]].forEach(([t,id]) => {
-      const el = $(id);
-      const isDone = !!state[t];
-      el.classList.toggle("done", isDone);
-      el.disabled = isDone;
+    [["good","choiceGood"],["bad","choiceBad"]].forEach(([t, id]) => {
+      const el = $(id), isDone = !!state[t];
+      el.classList.toggle("done", isDone); el.disabled = isDone;
       el.querySelector(".choice-status").textContent = isDone ? "✓ Tersimpan" : "Pilih";
     });
   }
@@ -901,46 +1106,35 @@
     $(id).addEventListener("click", e => {
       const t = e.currentTarget.dataset.type;
       if (busy || state[t]) return;
-      openReflect(t);
+        openReflect(t);
     });
   });
 
-  /* ===== LAYAR 3 / 5 ===== */
+  /* ===== REFLEKSI ===== */
   const ta = $("memoryInput");
   function openReflect(type){
     state.type = type;
     const c = CONTENT[type];
-    const scr = $("s-reflect");
-    scr.dataset.tone = type;
-
+    $("s-reflect").dataset.tone = type;
+    Scene.set(type);
     const wrap = $("reflectWrap");
-    wrap.classList.add("no-anim");
-    wrap.classList.remove("sealing");
-    void wrap.offsetWidth;
-    wrap.classList.remove("no-anim");
-
+    wrap.classList.add("no-anim"); wrap.classList.remove("sealing"); void wrap.offsetWidth; wrap.classList.remove("no-anim");
     $("reflectTag").textContent = c.tag;
-    $("reflectTitle").textContent = c.title(state.name);
+    $("reflectTitle").textContent = c.title;
     $("reflectLead").textContent = c.lead;
     buildChips(c.chips);
-    ta.value = "";
-    ta.style.height = "";
+    ta.value = ""; ta.style.height = "";
     selectedTpl = null;
     validate();
-
-    const done = (state.good ? 1 : 0) + (state.bad ? 1 : 0);
-    setProgress(done === 0 ? 25 : 60);
+    setProgress(doneCount() === 0 ? 25 : 60);
     go("s-reflect");
   }
-
   function buildChips(list){
-    const wrap = $("chips");
-    wrap.innerHTML = "";
+    const wrap = $("chips"); wrap.innerHTML = "";
     list.forEach(text => {
       const b = document.createElement("button");
-      b.type = "button";
-      b.className = "chip";
-      b.textContent = text.replace(/ (\.{2,}|…)$/, "\u00A0$1"); // titik tidak turun sendirian
+      b.type = "button"; b.className = "chip";
+      b.textContent = text.replace(/ (\.{2,}|…)$/, " $1");
       b.addEventListener("click", () => pickChip(b, text));
       wrap.appendChild(b);
     });
@@ -950,27 +1144,20 @@
     document.querySelectorAll(".chip").forEach(c => c.classList.remove("selected"));
     btn.classList.add("selected");
     const newTpl = toTemplate(text);
-
-    // Ambil lanjutan cerita yang sudah ditulis peserta (tanpa awalan chip lama)
+    // hanya awalan chip yang diganti, tulisan peserta tetap
     const cur = ta.value;
     let rest = cur;
-    const prefixes = CONTENT[state.type].chips.map(c => toTemplate(c).trim());
-    const used = prefixes.find(pre => cur.trim().startsWith(pre));
+    const used = CONTENT[state.type].chips.map(c => toTemplate(c).trim()).find(pre => cur.trim().startsWith(pre));
     if (used) rest = cur.trimStart().slice(used.length);
     rest = rest.trim();
-
     selectedTpl = newTpl;
-    ta.value = rest ? newTpl + rest : newTpl;   // hanya awalan yang diganti, isi peserta tetap
+    ta.value = rest ? newTpl + rest : newTpl;
     autoGrow();
     ta.focus({ preventScroll:true });
-    const L = ta.value.length;
-    try { ta.setSelectionRange(L, L); } catch(e){}
+    try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch(e){}
     validate();
   }
-  function autoGrow(){
-    ta.style.height = "auto";
-    ta.style.height = Math.min(ta.scrollHeight + 2, 320) + "px";
-  }
+  function autoGrow(){ ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight + 2, 180) + "px"; }
   function validate(){
     const v = ta.value.trim();
     if (selectedTpl && !ta.value.startsWith(selectedTpl.trim())){
@@ -980,31 +1167,29 @@
     const incomplete = !!selectedTpl && v === selectedTpl.trim();
     $("btnSave").disabled = !v || incomplete;
     const h = $("taHint");
-    if (incomplete){ h.textContent = "Lanjutkan kalimatnya dengan ceritamu ✍️"; h.classList.add("show"); }
-    else { h.classList.remove("show"); }
+    if (incomplete){ h.textContent = "Lanjutkan kalimatnya dengan ceritamu ✍️"; h.classList.add("show"); } else h.classList.remove("show");
   }
   ta.addEventListener("input", () => { autoGrow(); validate(); });
 
   $("btnBack").addEventListener("click", () => {
     if (busy || currentScreen.id !== "s-reflect") return;
-    const done = (state.good ? 1 : 0) + (state.bad ? 1 : 0);
-    setProgress(done === 0 ? 15 : 50);
+    setProgress(doneCount() === 0 ? 15 : 50);
+    Scene.set("calm");
     renderChoice();
     go("s-choice");
   });
 
-  /* ===== Simpan Memori → Time Capsule ===== */
   $("btnSave").addEventListener("click", () => {
     if (busy || $("btnSave").disabled) return;
     state[state.type] = ta.value.trim();
     ta.blur();
-    busy = true;
-    showBack(false);
+    Snd.sfx("chime");
+    busy = true; showBack(false);
     $("reflectWrap").classList.add("sealing");
-    later(openFeel, 750);
+    later(openFeel, 720);
   });
 
-  /* ===== Langkah perasaan ===== */
+  /* ===== PERASAAN ===== */
   let feelLocked = false;
   function openFeel(){
     const type = state.type, f = FEELS[type];
@@ -1012,116 +1197,84 @@
     $("feelTag").textContent = CONTENT[type].tag;
     $("feelLead").textContent = f.lead;
     $("feelEcho").textContent = `“${state[type]}”`;
-    const wrap = $("feels");
-    wrap.className = "feels";
-    wrap.innerHTML = "";
+    const wrap = $("feels"); wrap.className = "feels"; wrap.innerHTML = "";
     f.options.forEach(o => {
       const b = document.createElement("button");
       b.type = "button"; b.className = "feel";
-      const t = document.createElement("span"); t.className = "feel-title"; t.textContent = `${o.e} ${o.t}`;
-      const d = document.createElement("span"); d.className = "feel-desc"; d.textContent = o.d;
-      b.append(t, d);
+      b.innerHTML = '<span class="feel-emoji" aria-hidden="true"></span><span class="feel-title"></span><span class="feel-desc"></span>';
+      b.children[0].textContent = o.e; b.children[1].textContent = o.t; b.children[2].textContent = o.d;
       b.addEventListener("click", () => pickFeel(b, o));
       wrap.appendChild(b);
     });
     feelLocked = false;
-    const done = (state.good ? 1 : 0) + (state.bad ? 1 : 0);
-    setProgress(done === 1 ? 35 : 75);
+    setProgress(doneCount() === 1 ? 35 : 75);
     go("s-feel");
   }
   function pickFeel(btn, o){
     if (busy || feelLocked) return;
     feelLocked = true;
     state[state.type + "Feel"] = `${o.e} ${o.t}`;
-    $("feels").classList.add("answered");
-    btn.classList.add("picked");
+    $("feels").classList.add("answered"); btn.classList.add("picked");
     document.querySelectorAll(".feel").forEach(b => { b.disabled = true; });
-    later(() => { startQ(); go("s-q"); }, 1000);
+    later(() => { startQ(); go("s-q"); }, 950);
   }
 
-  /* ===== Pertanyaan refleksi, muncul di akhir tiap pengalaman
-     (jawaban tidak masuk ke kartu unduhan) ===== */
+  /* ===== PERTANYAAN (muncul di akhir tiap momen; tidak masuk kartu) ===== */
   const qInput = $("qInput");
   function startQ(){
     const type = state.type;
     $("s-q").dataset.tone = type;
     $("qTag").textContent = CONTENT[type].tag;
+    $("qLead").textContent = CONTENT[type].qLead;
     $("qEcho").textContent = `“${state[type]}”`;
     const main = $("qMain");
-    main.classList.add("no-anim");
-    main.classList.remove("hide");
-    void main.offsetWidth;
-    main.classList.remove("no-anim");
+    main.classList.add("no-anim"); main.classList.remove("hide"); void main.offsetWidth; main.classList.remove("no-anim");
     qInput.value = ""; qInput.style.height = "";
     $("btnQ").disabled = true;
-    const done = (state.good ? 1 : 0) + (state.bad ? 1 : 0);
-    setProgress(done === 1 ? 42 : 82);
+    setProgress(doneCount() === 1 ? 42 : 82);
   }
   qInput.addEventListener("input", () => {
-    qInput.style.height = "auto";
-    qInput.style.height = Math.min(qInput.scrollHeight + 2, 320) + "px";
+    qInput.style.height = "auto"; qInput.style.height = Math.min(qInput.scrollHeight + 2, 180) + "px";
     $("btnQ").disabled = !qInput.value.trim();
   });
   $("btnQ").addEventListener("click", () => {
     if (busy || $("btnQ").disabled) return;
     state[state.type + "Change"] = qInput.value.trim();
     qInput.blur();
-    $("btnQ").disabled = true;
-    busy = true;
+    Snd.sfx("chime");
+    $("btnQ").disabled = true; busy = true;
     $("qMain").classList.add("hide");
     const final = !!(state.good && state.bad);
-
+    later(() => { prepCapsule(final); go("s-capsule", () => playCapsule(final)); }, 680);
     later(() => {
-      prepCapsule(final);
-      go("s-capsule", () => playCapsule(final));
-    }, 700);
-
-    later(() => {
+      Scene.set("calm");
       if (final){ renderReport(); setProgress(100); go("s-report"); }
       else { renderChoice(); setProgress(50); go("s-choice"); }
-    }, 700 + 620 + (final ? 8900 : 5400));
+    }, 680 + 580 + 2800);
   });
 
+  /* ===== KAPSUL WAKTU ===== */
   function prepCapsule(final){
     $("s-capsule").dataset.tone = final ? "merge" : state.type;
-    const cap = $("capsule");
-    cap.className = "capsule no-anim" + (final ? " dual" : "");
-    void cap.offsetWidth;
-    cap.classList.remove("no-anim");
-    $("capsuleText").classList.remove("show");
-    $("capsuleSub").classList.remove("show");
+    [$("capsuleText"), $("capsuleSub"), document.querySelector(".saved-ico")].forEach(el => el.classList.remove("show"));
     $("capsuleText").textContent = "Memori kamu telah disimpan.";
-    $("capsuleSub").textContent = final
-      ? "Mari kita lihat perjalananmu…"
-      : "Masih ada satu cerita lagi yang menunggu…";
+    $("capsuleSub").textContent = final ? "Yuk, lihat dua momenmu…" : "Masih ada satu momen lagi yang menunggu…";
   }
   function playCapsule(final){
-    const cap = $("capsule");
-    if (final){
-      // kuning & biru muncul → bergerak pelan → menyatu → menyusut jadi bintang
-      later(() => cap.classList.add("glow"), 250);
-      later(() => cap.classList.add("merge"), 1300);
-      later(() => cap.classList.add("shrink"), 4600);
-      later(() => { cap.classList.add("star"); $("capsuleText").classList.add("show"); }, 6100);
-      later(() => $("capsuleSub").classList.add("show"), 6700);
-    } else {
-      later(() => cap.classList.add("glow"), 250);
-      later(() => cap.classList.add("shrink"), 1250);
-      later(() => { cap.classList.add("star"); $("capsuleText").classList.add("show"); }, 2750);
-      later(() => $("capsuleSub").classList.add("show"), 3400);
-    }
+    later(() => { document.querySelector(".saved-ico").classList.add("show"); $("capsuleText").classList.add("show"); Snd.sfx("chime"); }, 200);
+    later(() => $("capsuleSub").classList.add("show"), 800);
+    if (final) later(() => Scene.set("calm"), 300);
   }
 
-  /* ===== LAYAR 6 ===== */
+  /* ===== KARTU MEMORI ===== */
   function formatDate(){
     try { return new Date().toLocaleDateString("id-ID", { day:"numeric", month:"long", year:"numeric" }); }
     catch(e){ return new Date().toDateString(); }
   }
   function renderReport(){
-    lockFinish();
     $("cardAvatar").textContent = initialOf(state.name);
     $("cardName").textContent = state.name;
-    $("cardDate").textContent = formatDate();
+    $("cardDate").textContent = state.year ? `Karyawan sejak ${state.year}` : formatDate();
     $("cardGood").textContent = state.good;
     $("cardBad").textContent = state.bad;
     $("cardGoodFeel").textContent = state.goodFeel ? `Rasanya saat itu: ${state.goodFeel}` : "";
@@ -1129,219 +1282,11 @@
     $("cardQuote").textContent = QUOTE;
   }
 
-  /* ===== Unduh kartu (Canvas, tanpa library) ===== */
-  const FONT = '"Plus Jakarta Sans", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
-
-  function wrapLines(ctx, text, maxW){
-    const out = [];
-    String(text).split(/\r?\n/).forEach(par => {
-      if (!par.trim()){ out.push(""); return; }
-      const words = par.split(/\s+/).filter(Boolean);
-      let line = "";
-      words.forEach(word => {
-        let w = word;
-        while (ctx.measureText(w).width > maxW){
-          const chars = Array.from(w);
-          let i = 1;
-          while (i < chars.length && ctx.measureText(chars.slice(0, i + 1).join("")).width <= maxW) i++;
-          if (line){ out.push(line); line = ""; }
-          out.push(chars.slice(0, i).join(""));
-          w = chars.slice(i).join("");
-        }
-        const test = line ? line + " " + w : w;
-        if (line && ctx.measureText(test).width > maxW){ out.push(line); line = w; }
-        else line = test;
-      });
-      if (line) out.push(line);
-    });
-    return out;
-  }
-  function rr(ctx, x, y, w, h, r){
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
-  }
-
-  function paintCard(ctx, W, H, draw){
-    const P = 88, inner = W - P * 2, CX = W / 2;
-    ctx.textBaseline = "top";
-    ctx.textAlign = "center";
-
-    if (draw){
-      ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
-      let g = ctx.createRadialGradient(CX, 0, 0, CX, 0, W * .95);
-      g.addColorStop(0, "rgba(196,181,253,.20)"); g.addColorStop(1, "rgba(196,181,253,0)");
-      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-      g = ctx.createRadialGradient(CX, H, 0, CX, H, W * .9);
-      g.addColorStop(0, "rgba(253,186,116,.10)"); g.addColorStop(1, "rgba(253,186,116,0)");
-      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    }
-
-    let y = P + 8;
-    ctx.font = `600 28px ${FONT}`;
-    if (draw){ ctx.fillStyle = "#A1A1AA"; ctx.fillText("📮  Kapsul memori hari pertamaku", CX, y); }
-    y += 28 + 48;
-
-    // Avatar (tengah)
-    const AV = 128;
-    if (draw){
-      ctx.fillStyle = "#C4B5FD";
-      ctx.beginPath(); ctx.arc(CX, y + AV / 2, AV / 2, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = "#000"; ctx.font = `800 58px ${FONT}`;
-      ctx.textBaseline = "middle";
-      ctx.fillText(initialOf(state.name), CX, y + AV / 2 + 2);
-      ctx.textBaseline = "top";
-    }
-    y += AV + 30;
-
-    // Nama + tanggal
-    ctx.font = `800 58px ${FONT}`;
-    const nameLines = wrapLines(ctx, state.name, inner);
-    const NLH = 70;
-    if (draw){
-      ctx.fillStyle = "#F4F4F5";
-      nameLines.forEach((l, i) => ctx.fillText(l, CX, y + i * NLH));
-    }
-    y += nameLines.length * NLH + 6;
-    ctx.font = `500 30px ${FONT}`;
-    if (draw){ ctx.fillStyle = "#A1A1AA"; ctx.fillText(formatDate(), CX, y); }
-    y += 30 + 60;
-
-    // Dua bagian memori
-    [["good","☀️  Momen hangat","#FDBA74","rgba(253,186,116,"],
-     ["bad","🌧️  Momen berat","#93C5FD","rgba(147,197,253,"]].forEach(([k, label, color, rgba]) => {
-      const pad = 46, LH = 58, TAG = 50;
-      ctx.font = `400 37px ${FONT}`;
-      const lines = wrapLines(ctx, state[k], inner - pad * 2);
-      const feel = state[k + "Feel"] ? `Rasanya saat itu: ${state[k + "Feel"]}` : "";
-      const FEEL_H = feel ? 52 : 0;
-      const h = pad + TAG + 26 + lines.length * LH + FEEL_H + pad - 10;
-      if (draw){
-        rr(ctx, P, y, inner, h, 36);
-        ctx.fillStyle = rgba + ".10)"; ctx.fill();
-        ctx.strokeStyle = rgba + ".28)"; ctx.lineWidth = 2; ctx.stroke();
-
-        ctx.font = `700 27px ${FONT}`;
-        const tw = ctx.measureText(label).width + 44;
-        rr(ctx, CX - tw / 2, y + pad, tw, TAG, TAG / 2);
-        ctx.fillStyle = "rgba(0,0,0,.35)"; ctx.fill();
-        ctx.fillStyle = color; ctx.fillText(label, CX, y + pad + 11);
-
-        ctx.font = `400 37px ${FONT}`; ctx.fillStyle = "#F4F4F5";
-        lines.forEach((l, i) => ctx.fillText(l, CX, y + pad + TAG + 26 + i * LH + 10));
-        if (feel){
-          ctx.font = `700 28px ${FONT}`; ctx.fillStyle = color;
-          ctx.fillText(feel, CX, y + pad + TAG + 26 + lines.length * LH + 22);
-        }
-      }
-      y += h + 28;
-    });
-
-    // Quote (tengah, garis kecil di atas)
-    y += 30;
-    if (draw){ ctx.fillStyle = "#C4B5FD"; rr(ctx, CX - 28, y, 56, 5, 2.5); ctx.fill(); }
-    y += 5 + 34;
-    ctx.font = `500 35px ${FONT}`;
-    const ql = wrapLines(ctx, QUOTE, inner - 80);
-    const QLH = 56;
-    if (draw){
-      ctx.fillStyle = "#F4F4F5";
-      ql.forEach((l, i) => ctx.fillText(l, CX, y + i * QLH));
-    }
-    y += ql.length * QLH + 64;
-
-    // Footer
-    if (draw){
-      ctx.fillStyle = "rgba(255,255,255,.14)"; ctx.fillRect(P, y, inner, 2);
-      ctx.fillStyle = "#71717A"; ctx.font = `500 26px ${FONT}`;
-      ctx.fillText("🤍", CX, y + 30);
-      ctx.fillText("© Education and Training Departement 2026", CX, y + 72);
-    }
-    y += 72 + 26 + P;
-    return y;
-  }
-
-  function slug(s){
-    return String(s).toLowerCase().normalize("NFKD").replace(/[^\w]+/g, "-").replace(/^-+|-+$/g, "") || "peserta";
-  }
-  const IN_FRAME = (() => { try { return window.self !== window.top; } catch(e){ return true; } })();
-  const IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
-                 (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  function triggerDownload(href, filename){
-    const a = document.createElement("a");
-    a.href = href; a.download = filename; a.rel = "noopener";
-    document.body.appendChild(a); a.click(); a.remove();
-  }
-
-  async function downloadCard(){
-    const btn = $("btnDownload");
-    if (btn.dataset.busy) return;
-    btn.dataset.busy = "1";
-    try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch(e){}
-
-    const W = 1080;
-    const c = document.createElement("canvas");
-    c.width = W; c.height = 10;
-    let ctx = c.getContext("2d");
-    const H = Math.max(1350, Math.ceil(paintCard(ctx, W, 10, false)));
-    c.height = H;
-    ctx = c.getContext("2d");
-    paintCard(ctx, W, H, true);
-
-    const fname = `kapsul-memori-${slug(state.name)}.png`;
-    const dataUrl = c.toDataURL("image/png");
-
-    // Paksa unduh: blob bertipe octet-stream supaya browser tidak membuka gambar di tab baru
-    let ok = false;
-    try {
-      const bin = atob(dataUrl.split(",")[1]);
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      const blob = new Blob([bytes], { type:"application/octet-stream" });
-      if (window.navigator.msSaveOrOpenBlob){ window.navigator.msSaveOrOpenBlob(blob, fname); }
-      else {
-        const url = URL.createObjectURL(blob);
-        triggerDownload(url, fname);
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
-      }
-      ok = true;
-    } catch(e){
-      try { triggerDownload(dataUrl, fname); ok = true; } catch(e2){}
-    }
-    delete btn.dataset.busy;
-    unlockFinish();
-
-    // Di dalam iframe LMS / iPhone unduhan bisa diblokir diam-diam → tampilkan gambar untuk disimpan manual
-    if (!ok || IN_FRAME || IS_IOS){ openSaveSheet(dataUrl, fname); }
-    else { toast("Kartu memori berhasil diunduh ✨"); }
-  }
-
-  function lockFinish(){
-    $("btnFinish").disabled = true;
-    $("finishHint").classList.remove("hide");
-  }
-  function unlockFinish(){
-    $("btnFinish").disabled = false;
-    $("finishHint").classList.add("hide");
-  }
-
-  function openSaveSheet(dataUrl, fname){
-    $("saveImg").src = dataUrl;
-    $("saveRetry").onclick = () => triggerDownload(dataUrl, fname);
-    $("saveSheet").classList.add("show");
-  }
-  $("saveClose").addEventListener("click", () => $("saveSheet").classList.remove("show"));
-  $("btnDownload").addEventListener("click", downloadCard);
-
   /* ===== Selesai → fade to black → kembali ke awal ===== */
   $("btnFinish").addEventListener("click", () => {
-    if (busy || $("btnFinish").disabled) return;
+    if (busy) return;
     busy = true;
-    if (Bgm.isOn()){ Bgm.stop(2.5); setBgmUI(false); }
+    if (Snd.isOn()){ Snd.stop(2.5); setSoundUI(false); }
     const bo = $("blackout");
     bo.classList.add("on");
     later(() => $("bo1").classList.add("show"), 2000);
@@ -1352,198 +1297,21 @@
   });
 
   function resetAll(){
-    state.name = ""; state.good = ""; state.bad = ""; state.type = null;
-    state.goodFeel = ""; state.badFeel = ""; state.goodChange = ""; state.badChange = "";
+    Object.assign(state, { name:"", year:"", good:"", bad:"", goodFeel:"", badFeel:"", goodChange:"", badChange:"", type:null });
     selectedTpl = null;
-    nameInput.value = "";
-    lastLetter = "";
+    nameInput.value = ""; lastLetter = "";
+    yearInput.value = ""; $("btnYear").disabled = true; $("yearLive").classList.remove("show");
     $("avatarLetter").textContent = "✦";
     $("avatarPreview").classList.remove("filled", "pop");
     $("btnStart").disabled = true;
     $("greetLive").classList.remove("show");
     $("meChip").classList.remove("show");
-    showBack(false);
-    setProgress(0);
+    showBack(false); setProgress(0);
+    Scene.set("calm");
     document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-    currentScreen = $("s-welcome");
-    currentScreen.scrollTop = 0;
-    currentScreen.classList.add("active");
+    currentScreen = $("s-intro"); currentScreen.scrollTop = 0; currentScreen.classList.add("active");
+    playIntro();
   }
-
-  /* ===== BGM lo-fi =====
-     Opsi 1 (default): musik dibuat langsung oleh browser, bersih tanpa noise/crackle.
-     Opsi 2: isi BGM_FILE dengan nama file musikmu (mis. "lofi.mp3") di folder yang sama. */
-  const BGM_FILE = "";
-
-  const Bgm = (() => {
-    let on = false;
-
-    /* --- Opsi 2: file audio sendiri --- */
-    if (BGM_FILE){
-      let audio = null, fadeT = null;
-      const fadeTo = (target, ms, done) => {
-        clearInterval(fadeT);
-        const start = audio.volume, steps = Math.max(1, Math.round(ms / 50));
-        let i = 0;
-        fadeT = setInterval(() => {
-          i++;
-          audio.volume = Math.min(1, Math.max(0, start + (target - start) * (i / steps)));
-          if (i >= steps){ clearInterval(fadeT); if (done) done(); }
-        }, 50);
-      };
-      return {
-        async start(){
-          if (!audio){ audio = new Audio(BGM_FILE); audio.loop = true; audio.volume = 0; }
-          try { await audio.play(); } catch(e){ return false; }
-          on = true; fadeTo(.5, 1500); return true;
-        },
-        stop(fade){
-          if (!audio || !on) return;
-          on = false; fadeTo(0, (fade || .9) * 1000, () => { if (!on) audio.pause(); });
-        },
-        isOn: () => on
-      };
-    }
-
-    /* --- Opsi 1: lo-fi sintetis yang halus --- */
-    let ctx, master, bus, input, timer, nextTime = 0, bar = 0;
-    const BPM = 62, BEAT = 60 / BPM, BAR = BEAT * 4;
-    // Fmaj7 – Em7 – Dm7 – Cmaj7 (progresi mellow)
-    const PROG = [[53,57,60,64],[52,55,59,62],[50,53,57,60],[48,52,55,59]];
-    const MELODY = [[72,69],[71,67],[69,65],[67,64],[72,76],[74,71],[72,69],[71,67]];
-    const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
-
-    function init(){
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return false;
-      ctx = new AC();
-
-      master = ctx.createGain(); master.gain.value = 0;
-      const comp = ctx.createDynamicsCompressor();
-      comp.threshold.value = -20; comp.knee.value = 20; comp.ratio.value = 3;
-      comp.attack.value = .01; comp.release.value = .3;
-      comp.connect(master); master.connect(ctx.destination);
-
-      // Tone hangat: lowpass lembut
-      input = ctx.createBiquadFilter(); input.type = "lowpass";
-      input.frequency.value = 1700; input.Q.value = .2;
-
-      // Ruang/echo halus (tanpa noise)
-      const delay = ctx.createDelay(1.5); delay.delayTime.value = BEAT * .75;
-      const fb = ctx.createGain(); fb.gain.value = .28;
-      const dTone = ctx.createBiquadFilter(); dTone.type = "lowpass"; dTone.frequency.value = 1100;
-      const wet = ctx.createGain(); wet.gain.value = .32;
-      input.connect(comp);
-      input.connect(delay); delay.connect(dTone); dTone.connect(fb); fb.connect(delay);
-      dTone.connect(wet); wet.connect(comp);
-      return true;
-    }
-
-    // Nada piano elektrik lembut (attack halus = tanpa klik)
-    function keyNote(out, freq, t, dur, vel){
-      const o1 = ctx.createOscillator(); o1.type = "sine"; o1.frequency.value = freq;
-      const o2 = ctx.createOscillator(); o2.type = "sine"; o2.frequency.value = freq * 2;
-      const g2 = ctx.createGain(); g2.gain.value = .07;
-      const g = ctx.createGain();
-      const lfo = ctx.createOscillator(); lfo.frequency.value = .4;
-      const lg = ctx.createGain(); lg.gain.value = 4;   // wobble ala kaset, sangat tipis
-      lfo.connect(lg); lg.connect(o1.detune); lg.connect(o2.detune);
-      o1.connect(g); o2.connect(g2); g2.connect(g); g.connect(out);
-      g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(vel, t + .05);
-      g.gain.setTargetAtTime(vel * .3, t + .05, .7);
-      g.gain.setTargetAtTime(0, t + dur - .35, .15);
-      const end = t + dur + .5;
-      [o1, o2, lfo].forEach(o => { o.start(t); o.stop(end); });
-    }
-    function bass(out, freq, t, dur){
-      const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = freq;
-      const g = ctx.createGain();
-      o.connect(g); g.connect(out);
-      g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(.16, t + .06);
-      g.gain.setTargetAtTime(.08, t + .06, .5);
-      g.gain.setTargetAtTime(0, t + dur - .2, .1);
-      o.start(t); o.stop(t + dur + .4);
-    }
-    function softKick(out, t){
-      const o = ctx.createOscillator(); o.type = "sine";
-      o.frequency.setValueAtTime(95, t); o.frequency.exponentialRampToValueAtTime(48, t + .16);
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(.22, t + .008);
-      g.gain.setTargetAtTime(0, t + .02, .09);
-      o.connect(g); g.connect(out); o.start(t); o.stop(t + .6);
-    }
-
-    function scheduleBar(t, i){
-      const out = bus; if (!out) return;
-      const chord = PROG[i % PROG.length];
-      chord.forEach((m, k) => keyNote(out, mtof(m), t + k * .05, BAR * .98, .05));
-      keyNote(out, mtof(chord[1] + 12), t + BEAT * 2.5, BEAT * 1.5, .02);
-
-      const mel = MELODY[i % MELODY.length];
-      keyNote(out, mtof(mel[0]), t + BEAT * 1, BEAT * 1.6, .03);
-      keyNote(out, mtof(mel[1]), t + BEAT * 3, BEAT * 1.6, .025);
-
-      bass(out, mtof(chord[0] - 12), t, BEAT * 2.2);
-      bass(out, mtof(chord[0] - 12), t + BEAT * 2.5, BEAT * 1.4);
-
-      softKick(out, t);
-      softKick(out, t + BEAT * 2.5);
-    }
-    function tick(){
-      while (nextTime < ctx.currentTime + .6){
-        scheduleBar(nextTime, bar++);
-        nextTime += BAR;
-      }
-    }
-
-    async function start(){
-      if (!ctx && !init()) return false;
-      try { if (ctx.state === "suspended") await ctx.resume(); } catch(e){ return false; }
-      bus = ctx.createGain(); bus.connect(input);
-      nextTime = ctx.currentTime + .15; bar = 0;
-      clearInterval(timer); timer = setInterval(tick, 120); tick();
-      const now = ctx.currentTime;
-      master.gain.cancelScheduledValues(now);
-      master.gain.setValueAtTime(master.gain.value, now);
-      master.gain.linearRampToValueAtTime(.6, now + 2);
-      on = true;
-      return true;
-    }
-    function stop(fade){
-      if (!ctx || !on) return;
-      fade = fade || .9;
-      on = false;
-      clearInterval(timer);
-      const now = ctx.currentTime;
-      master.gain.cancelScheduledValues(now);
-      master.gain.setValueAtTime(master.gain.value, now);
-      master.gain.linearRampToValueAtTime(0, now + fade);
-      const oldBus = bus; bus = null;
-      setTimeout(() => {
-        try { oldBus && oldBus.disconnect(); } catch(e){}
-        if (!on) ctx.suspend().catch(() => {});
-      }, fade * 1000 + 300);
-    }
-    return { start, stop, isOn: () => on };
-  })();
-
-  const btnBgm = $("btnBgm");
-  function setBgmUI(isOn){
-    btnBgm.classList.toggle("on", isOn);
-    btnBgm.setAttribute("aria-pressed", String(isOn));
-    $("bgmLabel").textContent = isOn ? "🎧 BGM On" : "🎧 BGM Off";
-  }
-  btnBgm.addEventListener("click", async () => {
-    if (Bgm.isOn()){ Bgm.stop(); setBgmUI(false); }
-    else {
-      const ok = await Bgm.start();
-      setBgmUI(ok);
-      if (!ok) toast("Browser ini belum mendukung audio 🙏");
-    }
-  });
 })();
 </script>
 </body>
