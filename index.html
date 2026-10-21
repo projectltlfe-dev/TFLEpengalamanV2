@@ -623,9 +623,6 @@
 (function(){
   "use strict";
 
-  /* ===== Sinyal ke LMS / parent frame ===== */
-  try { window.parent.postMessage("scoreBarFound", "*"); } catch(e){}
-  try { window.top.postMessage("scoreBarFound", "*"); } catch(e){}
 
   const $ = id => document.getElementById(id);
   const R = (a, b) => a + Math.random() * (b - a);
@@ -1248,7 +1245,7 @@
     later(() => { prepCapsule(final); go("s-capsule", () => playCapsule(final)); }, 680);
     later(() => {
       Scene.set("calm");
-      if (final){ renderReport(); setProgress(100); go("s-report"); }
+      if (final){ renderReport(); setProgress(100); go("s-report", sendDoneSignal); }
       else { renderChoice(); setProgress(50); go("s-choice"); }
     }, 680 + 580 + 2800);
   });
@@ -1282,10 +1279,21 @@
     $("cardQuote").textContent = QUOTE;
   }
 
+  /* ===== Sinyal ke LMS: dikirim begitu halaman kartu memori muncul =====
+     (bukan saat halaman dibuka, supaya tombol "Selanjutnya" di LMS baru muncul di akhir) */
+  let signalSent = false;
+  function sendDoneSignal(){
+    if (signalSent) return;
+    signalSent = true;
+    window.parent.postMessage("scoreBarFound", "*");
+    window.top.postMessage("scoreBarFound", "*");
+  }
+
   /* ===== Selesai → fade to black → kembali ke awal ===== */
   $("btnFinish").addEventListener("click", () => {
     if (busy) return;
     busy = true;
+    sendDoneSignal();
     if (Snd.isOn()){ Snd.stop(2.5); setSoundUI(false); }
     const bo = $("blackout");
     bo.classList.add("on");
