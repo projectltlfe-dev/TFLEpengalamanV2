@@ -456,7 +456,7 @@
             <h1 class="intro-line" style="--d:.6s">Video sebelumnya hanyalah sebagian kecil dari cerita seorang karyawan baru.</h1>
             <p class="lead intro-line" style="--d:1.3s">Kini giliran kamu bercerita. Apa interaksi bersama atasan kamu di masa lalu yang membentuk cara kerja kamu di hari ini? Yuk, kita mulai!</p>
             <button class="btn btn-primary intro-line" id="btnIntro" type="button" style="--d:2.5s">Mulai ✍️</button>
-            <p class="private intro-line" style="--d:2.7s">🔒 Privat, nggak dikumpulkan, dan nggak dinilai</p>
+            <p class="private intro-line" style="--d:2.7s">🔒 Sifatnya personal, hanya untuk kamu saja</p>
           </div>
         </div>
       </section>
@@ -711,9 +711,11 @@
      =================================================================== */
   const Snd = (() => {
     let ctx = null, master, musicBus, ambBus, sfxBus, dripLP, brownBuf, on = false, timer = null, mode = "calm";
-    let nextChord = 0, chordIdx = 0, nextKey = 0, nextDrip = 0, nextBird = 0;
+    let nextStep = 0, stepIdx = 0, chordIdx = 0, melIdx = 2, nextDrip = 0, nextBird = 0;
     const CHORDS = [[48,55,59,62,64],[45,52,57,60,64],[41,48,57,60,64],[43,50,55,59,62]];  // Cmaj9, Am9, Fmaj9, G6/9
-    const PENTA = [72,74,76,79,81,84];
+    const ARP = [0, 1, 2, 4, 3, 2, 4, 1];
+    const PENTA = [72, 74, 76, 79, 81, 84, 86, 88];
+    const STEP = .34;
     const DRIP_RATE = { calm:3.2, good:0, bad:9 };
     const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
 
@@ -736,10 +738,10 @@
       });
       rvLP.connect(rvOut); rvOut.connect(comp);
 
-      const musicLP = ctx.createBiquadFilter(); musicLP.type = "lowpass"; musicLP.frequency.value = 1500;
+      const musicLP = ctx.createBiquadFilter(); musicLP.type = "lowpass"; musicLP.frequency.value = 1850;
       musicBus = ctx.createGain(); musicBus.gain.value = 1;
       musicBus.connect(musicLP); musicLP.connect(comp);
-      const ms = ctx.createGain(); ms.gain.value = .6; musicLP.connect(ms); ms.connect(rvIn);
+      const ms = ctx.createGain(); ms.gain.value = .55; musicLP.connect(ms); ms.connect(rvIn);
 
       ambBus = ctx.createGain(); ambBus.gain.value = 1; ambBus.connect(comp);
       const as = ctx.createGain(); as.gain.value = .35; ambBus.connect(as); as.connect(rvIn);
@@ -759,25 +761,26 @@
         [[ "sine", -5], [ "triangle", 5 ]].forEach(([type, det]) => {
           const o = ctx.createOscillator(); o.type = type; o.frequency.value = mtof(m); o.detune.value = det;
           const g = ctx.createGain();
-          const v = type === "sine" ? .016 : .007;
+          const v = type === "sine" ? .014 : .006;
           g.gain.setValueAtTime(0, t);
-          g.gain.linearRampToValueAtTime(v, t + 2.4 + i * .1);
-          g.gain.setValueAtTime(v, t + dur - 2.6);
+          g.gain.linearRampToValueAtTime(v, t + .55 + i * .05);
+          g.gain.setValueAtTime(v, t + dur - .75);
           g.gain.linearRampToValueAtTime(0, t + dur);
           o.connect(g); g.connect(musicBus); o.start(t); o.stop(t + dur + .1);
         });
       });
     }
-    function key(t, midi, v, out){
+    function key(t, midi, v, out, dur){
+      dur = dur || 1.6;
       const f = mtof(midi), g = ctx.createGain();
       g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(v, t + .012);
-      g.gain.exponentialRampToValueAtTime(.0001, t + 2.4);
-      const o1 = ctx.createOscillator(); o1.frequency.value = f;
-      const o2 = ctx.createOscillator(); o2.frequency.value = f * 2;
-      const g2 = ctx.createGain(); g2.gain.value = .12;
+      g.gain.linearRampToValueAtTime(v, t + .01);
+      g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      const o1 = ctx.createOscillator(); o1.type = "triangle"; o1.frequency.value = f;
+      const o2 = ctx.createOscillator(); o2.type = "sine"; o2.frequency.value = f * 2;
+      const g2 = ctx.createGain(); g2.gain.value = .14;
       o1.connect(g); o2.connect(g2); g2.connect(g); g.connect(out || musicBus);
-      o1.start(t); o2.start(t); o1.stop(t + 2.5); o2.stop(t + 2.5);
+      o1.start(t); o2.start(t); o1.stop(t + dur + .05); o2.stop(t + dur + .05);
     }
     // rintik: tetesan kecil bernada (bukan noise) → halus, tidak "kresek"
     function drip(t, v){
@@ -818,11 +821,24 @@
 
     function tick(){
       const ahead = ctx.currentTime + .5;
-      while (nextChord < ahead){ pad(nextChord, CHORDS[chordIdx++ % CHORDS.length], 9); nextChord += 8; }
-      while (nextKey < ahead){
-        key(nextKey, PENTA[Math.floor(R(0, PENTA.length))], R(.016, .028));
-        if (Math.random() < .3) key(nextKey + R(.25, .5), PENTA[Math.floor(R(0, PENTA.length))], .014);
-        nextKey += R(1.8, 3.6);
+      while (nextStep < ahead){
+        const sub = stepIdx % 8;
+        const chord = CHORDS[chordIdx % CHORDS.length];
+        if (sub === 0){
+          pad(nextStep, chord, STEP * 9.2);
+        }
+        // arpeggio mengalir di setiap ketukan
+        const arpNote = chord[ARP[sub]] + 12;
+        key(nextStep, arpNote, sub % 2 === 0 ? .018 : .013, musicBus, 1.2);
+
+        // melodi mengalir di atas arpeggio
+        if (sub === 0 || sub === 2 || sub === 4 || (sub === 6 && Math.random() < .75) || (sub === 3 && Math.random() < .45)){
+          melIdx = Math.max(0, Math.min(PENTA.length - 1, melIdx + (Math.random() < .5 ? 1 : -1) * (Math.random() < .35 ? 2 : 1)));
+          key(nextStep, PENTA[melIdx], R(.022, .032), musicBus, 1.8);
+        }
+        stepIdx++;
+        if (stepIdx % 8 === 0) chordIdx++;
+        nextStep += STEP;
       }
       const rate = DRIP_RATE[mode];
       if (rate > 0){
@@ -839,9 +855,9 @@
       const now = ctx.currentTime;
       master.gain.cancelScheduledValues(now);
       master.gain.setValueAtTime(master.gain.value, now);
-      master.gain.linearRampToValueAtTime(.9, now + 2.5);
-      nextChord = now + .1; nextKey = now + 2; nextDrip = now + .3; nextBird = now + .5;
-      clearInterval(timer); timer = setInterval(tick, 150); tick();
+      master.gain.linearRampToValueAtTime(.9, now + .9);
+      stepIdx = 0; nextStep = now + .08; nextDrip = now + .3; nextBird = now + .5;
+      clearInterval(timer); timer = setInterval(tick, 100); tick();
       on = true; return true;
     }
     function stop(fade){
@@ -1131,7 +1147,7 @@
     list.forEach(text => {
       const b = document.createElement("button");
       b.type = "button"; b.className = "chip";
-      b.textContent = text.replace(/ (\.{2,}|…)$/, " $1");
+      b.textContent = text.replace(/ (\.{2,}|…)$/, " $1");
       b.addEventListener("click", () => pickChip(b, text));
       wrap.appendChild(b);
     });
