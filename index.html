@@ -7,7 +7,7 @@
 <title>Kapsul Memori – Aku dan Atasanku Dulu</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
 <style>
   /* ================= TOKENS ================= */
   :root{
@@ -322,7 +322,45 @@
   .copy{ flex:none; position:relative; z-index:3; pointer-events:none; text-align:center; padding:2px 16px 8px; }
   .copy span{ display:inline-block; padding:3px 10px; border-radius:999px; background:rgba(255,255,255,.8); color:var(--ink-2); font-size:.66rem; font-weight:600; }
 
-  @media (min-width:768px){ .panel{ padding:24px 26px; } }
+
+  /* ===== Polaroid: animasi simpan momen & mosaik memori di akhir ===== */
+  :root{ --paper:#FFFCF4; --hand:'Kalam', 'Segoe Print', 'Comic Sans MS', cursive;
+         --photo-good:linear-gradient(160deg, #6FC0F0 0%, #B9E4F8 55%, #FFE5A3 100%);
+         --photo-bad:linear-gradient(160deg, #56626F 0%, #7D8A98 60%, #A3AFBA 100%); }
+  .saved-panel, .report-panel{ background:var(--paper); position:relative; padding-top:22px; }
+  .saved-panel::before, .report-panel::before{ content:''; position:absolute; top:8px; left:50%; transform:translateX(-50%); width:136px; height:8px;
+    background:radial-gradient(circle, rgba(18,52,59,.2) 3px, transparent 3.6px) 0 0/22.6px 8px repeat-x; }
+  .polaroid{ position:relative; margin:0; background:#fff; padding:7px 7px 10px; border-radius:6px; box-shadow:0 12px 26px -14px rgba(10,30,36,.55); text-align:center; }
+  .polaroid::before{ content:''; position:absolute; top:-7px; left:50%; width:54px; height:15px; transform:translateX(-50%) rotate(-3deg); background:rgba(255,212,140,.78); border-radius:2px; }
+  .pol-photo{ position:relative; height:58px; border-radius:4px; display:grid; place-items:center; font-size:1.6rem; overflow:hidden; background:var(--photo-good); }
+  .pol-photo svg{ position:absolute; left:0; right:0; bottom:0; width:100%; height:26px; }
+  [data-tone="bad"] .pol-photo{ background:var(--photo-bad); }
+  .pol-label{ display:block; margin-top:7px; font-size:.7rem; font-weight:800; color:var(--tone-text); }
+  .pol-text{ font-family:var(--hand); font-size:.98rem; line-height:1.35; color:var(--ink); margin-top:2px; overflow-wrap:anywhere; white-space:pre-wrap; }
+
+  /* layar tersimpan: polaroid masuk album */
+  .saved-panel{ padding-bottom:22px; }
+  .saved-pol{ width:190px; margin:8px auto 0; rotate:-4deg; opacity:0; transform:translateY(-24px) scale(.9); transition:opacity .5s ease, transform .6s var(--ease); }
+  .saved-pol .pol-text{ display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; font-size:.92rem; }
+  .saved-pol.show{ opacity:1; transform:none; }
+  .saved-pol.tuck{ opacity:0; transform:translateY(120px) scale(.25); transition:opacity .7s ease .15s, transform .8s cubic-bezier(.6,0,.3,1); }
+  .album{ display:flex; justify-content:center; gap:10px; margin:14px 0 12px; }
+  .slot{ width:44px; height:52px; border-radius:6px; border:2px dashed #C9DAD6; background:#fff; display:grid; place-items:center; font-size:1.05rem; opacity:.55; transition:all .4s; }
+  .slot.filled{ border:3px solid #fff; opacity:1; box-shadow:0 6px 14px -8px rgba(10,30,36,.6); }
+  .slot.filled.g{ background:var(--photo-good); } .slot.filled.b{ background:var(--photo-bad); }
+  .slot.pop{ animation:pop .45s var(--ease); }
+  .saved-panel .capsule-sub{ color:var(--ink-2); }
+
+  /* mosaik memori (kartu akhir) */
+  .trip{ display:flex; align-items:center; justify-content:center; gap:8px; margin:-2px auto 12px; font-size:.74rem; font-weight:800; color:var(--ink-3); }
+  .trip i{ position:relative; width:90px; height:2px; background:repeating-linear-gradient(90deg, var(--teal) 0 6px, transparent 6px 10px); }
+  .trip i::before, .trip i::after{ content:''; position:absolute; top:-3px; width:8px; height:8px; border-radius:50%; background:var(--teal); }
+  .trip i::before{ left:-4px; } .trip i::after{ right:-4px; }
+  .mosaic{ display:grid; grid-template-columns:1fr 1fr; gap:14px 12px; padding:8px 2px 4px; align-items:start; }
+  .mosaic .polaroid:nth-child(1){ rotate:-1.6deg; } .mosaic .polaroid:nth-child(2){ rotate:1.6deg; }
+  .mosaic .pol-text{ font-size:.92rem; }
+  .mosaic .card-feel{ display:inline-block; margin-top:6px; padding:3px 8px; border-radius:999px; background:var(--tone-soft); color:var(--tone-text); font-size:.7rem; font-weight:800; }
+  @media (min-width:768px){ .panel{ padding:24px 26px; } .saved-panel, .report-panel{ padding-top:26px; } }
   @media (prefers-reduced-motion: reduce){
     *, *::before, *::after{ animation-duration:.01ms !important; animation-iteration-count:1 !important; }
     .screen, .screen.active{ transform:none; }
@@ -565,8 +603,12 @@
       <!-- KAPSUL WAKTU -->
       <section class="screen" id="s-capsule" data-tone="good">
         <div class="screen-inner">
-          <div class="panel dark capsule-panel">
-            <div class="saved-ico" aria-hidden="true">🔒</div>
+          <div class="panel saved-panel">
+            <figure class="polaroid saved-pol" id="savedPol">
+              <div class="pol-photo" id="savedPhoto">☀️<svg viewBox="0 0 100 26" preserveAspectRatio="none" aria-hidden="true"><path d="M0 26 L18 10 L30 18 L50 2 L68 16 L82 8 L100 18 V26 Z" fill="rgba(255,255,255,.45)"/><path d="M0 26 L22 16 L44 22 L66 14 L100 22 V26 Z" fill="rgba(255,255,255,.6)"/></svg></div>
+              <p class="pol-text" id="savedText"></p>
+            </figure>
+            <div class="album" aria-hidden="true"><span class="slot g" id="slotGood">☀️</span><span class="slot b" id="slotBad">🌧️</span></div>
             <p class="capsule-text" id="capsuleText"></p>
             <p class="capsule-sub" id="capsuleSub"></p>
           </div>
@@ -586,15 +628,16 @@
                   <p class="card-date" id="cardDate"></p>
                 </div>
               </header>
-              <div class="card-sec" data-tone="good">
-                <span class="tag">☀️ Momen hangat</span>
-                <p id="cardGood"></p>
-                <p class="card-feel" id="cardGoodFeel"></p>
-              </div>
-              <div class="card-sec" data-tone="bad">
-                <span class="tag">🌧️ Momen berat</span>
-                <p id="cardBad"></p>
-                <p class="card-feel" id="cardBadFeel"></p>
+              <div class="trip" aria-label="Perjalanan kerja"><span id="tripFrom"></span><i></i><span id="tripTo"></span></div>
+              <div class="mosaic">
+                <figure class="polaroid" data-tone="good">
+                  <div class="pol-photo">☀️<svg viewBox="0 0 100 26" preserveAspectRatio="none" aria-hidden="true"><path d="M0 26 L18 10 L30 18 L50 2 L68 16 L82 8 L100 18 V26 Z" fill="rgba(255,255,255,.45)"/><path d="M0 26 L22 16 L44 22 L66 14 L100 22 V26 Z" fill="rgba(255,255,255,.6)"/></svg></div>
+                  <figcaption><span class="pol-label">Momen hangat</span><p class="pol-text" id="cardGood"></p><span class="card-feel" id="cardGoodFeel"></span></figcaption>
+                </figure>
+                <figure class="polaroid" data-tone="bad">
+                  <div class="pol-photo">🌧️<svg viewBox="0 0 100 26" preserveAspectRatio="none" aria-hidden="true"><path d="M0 26 L18 10 L30 18 L50 2 L68 16 L82 8 L100 18 V26 Z" fill="rgba(255,255,255,.45)"/><path d="M0 26 L22 16 L44 22 L66 14 L100 22 V26 Z" fill="rgba(255,255,255,.6)"/></svg></div>
+                  <figcaption><span class="pol-label">Momen berat</span><p class="pol-text" id="cardBad"></p><span class="card-feel" id="cardBadFeel"></span></figcaption>
+                </figure>
               </div>
               <blockquote class="card-quote" id="cardQuote"></blockquote>
               <div class="card-foot">© Education and Training Departement 2026</div>
@@ -1294,20 +1337,32 @@
       Scene.set("calm");
       if (final){ renderReport(); setProgress(100); go("s-report", sendDoneSignal); }
       else { renderChoice(); setProgress(50); go("s-choice"); }
-    }, 680 + 580 + 2800);
+    }, 680 + 580 + 3600);
   });
 
   /* ===== KAPSUL WAKTU ===== */
   function prepCapsule(final){
-    $("s-capsule").dataset.tone = final ? "merge" : state.type;
-    [$("capsuleText"), $("capsuleSub"), document.querySelector(".saved-ico")].forEach(el => el.classList.remove("show"));
+    const type = state.type;
+    $("s-capsule").dataset.tone = type;
+    const pol = $("savedPol");
+    pol.className = "polaroid saved-pol no-anim"; void pol.offsetWidth; pol.classList.remove("no-anim");
+    $("savedPhoto").firstChild.textContent = type === "good" ? "☀️" : "🌧️";
+    $("savedPhoto").style.background = type === "good" ? "var(--photo-good)" : "var(--photo-bad)";
+    $("savedText").textContent = state[type];
+    $("slotGood").classList.toggle("filled", !!state.good && type !== "good");
+    $("slotBad").classList.toggle("filled", !!state.bad && type !== "bad");
+    ["slotGood","slotBad"].forEach(id => $(id).classList.remove("pop"));
+    [$("capsuleText"), $("capsuleSub")].forEach(el => el.classList.remove("show"));
     $("capsuleText").textContent = "Memori kamu telah disimpan.";
     $("capsuleSub").textContent = final ? "Yuk, lihat dua momenmu…" : "Masih ada satu momen lagi yang menunggu…";
   }
   function playCapsule(final){
-    later(() => { document.querySelector(".saved-ico").classList.add("show"); $("capsuleText").classList.add("show"); Snd.sfx("chime"); }, 200);
-    later(() => $("capsuleSub").classList.add("show"), 800);
-    if (final) later(() => Scene.set("calm"), 300);
+    const pol = $("savedPol"), slot = $(state.type === "good" ? "slotGood" : "slotBad");
+    later(() => pol.classList.add("show"), 120);
+    later(() => pol.classList.add("tuck"), 1250);
+    later(() => { slot.classList.add("filled", "pop"); $("capsuleText").classList.add("show"); Snd.sfx("chime"); }, 1850);
+    later(() => $("capsuleSub").classList.add("show"), 2300);
+    if (final) later(() => Scene.set("calm"), 1900);
   }
 
   /* ===== KARTU MEMORI ===== */
@@ -1321,8 +1376,10 @@
     $("cardDate").textContent = state.year ? `Karyawan sejak ${state.year}` : formatDate();
     $("cardGood").textContent = state.good;
     $("cardBad").textContent = state.bad;
-    $("cardGoodFeel").textContent = state.goodFeel ? `Rasanya saat itu: ${state.goodFeel}` : "";
-    $("cardBadFeel").textContent = state.badFeel ? `Rasanya saat itu: ${state.badFeel}` : "";
+    $("cardGoodFeel").textContent = state.goodFeel || "";
+    $("cardBadFeel").textContent = state.badFeel || "";
+    $("tripFrom").textContent = state.year || "";
+    $("tripTo").textContent = new Date().getFullYear();
     $("cardQuote").textContent = QUOTE;
   }
 
