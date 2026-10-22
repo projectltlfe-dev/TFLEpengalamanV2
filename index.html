@@ -681,11 +681,17 @@
   const later = (fn, ms) => setTimeout(fn, ms);
   const doneCount = () => (state.good ? 1 : 0) + (state.bad ? 1 : 0);
 
+  function canBack(id){
+    if (id === "s-year" || id === "s-reflect" || id === "s-feel" || id === "s-q") return true;
+    if (id === "s-choice") return doneCount() === 0;
+    return false;
+  }
+
   function go(id, onShown){
     const next = $(id);
-    if (next === currentScreen){ if (onShown) onShown(); return; }
+    if (next === currentScreen){ showBack(canBack(id)); if (onShown) onShown(); return; }
     busy = true;
-    showBack(id === "s-reflect");
+    showBack(canBack(id));
     currentScreen.classList.remove("active");
     currentScreen = next;
     later(() => {
@@ -1185,11 +1191,36 @@
   ta.addEventListener("input", () => { autoGrow(); validate(); });
 
   $("btnBack").addEventListener("click", () => {
-    if (busy || currentScreen.id !== "s-reflect") return;
-    setProgress(doneCount() === 0 ? 15 : 50);
-    Scene.set("calm");
-    renderChoice();
-    go("s-choice");
+    if (busy) return;
+    const id = currentScreen.id;
+    if (id === "s-year"){
+      yearInput.blur();
+      setProgress(6);
+      go("s-welcome");
+    } else if (id === "s-choice"){
+      if (doneCount() > 0) return;
+      setProgress(10);
+      go("s-year");
+    } else if (id === "s-reflect"){
+      ta.blur();
+      setProgress(doneCount() === 0 ? 15 : 50);
+      Scene.set("calm");
+      renderChoice();
+      go("s-choice");
+    } else if (id === "s-feel"){
+      clearTimeout(feelTimer);
+      feelLocked = false;
+      state[state.type] = "";
+      state[state.type + "Feel"] = "";
+      const wrap = $("reflectWrap");
+      wrap.classList.add("no-anim"); wrap.classList.remove("sealing"); void wrap.offsetWidth; wrap.classList.remove("no-anim");
+      validate();
+      setProgress(doneCount() === 0 ? 25 : 60);
+      go("s-reflect");
+    } else if (id === "s-q"){
+      qInput.blur();
+      openFeel();
+    }
   });
 
   $("btnSave").addEventListener("click", () => {
@@ -1203,7 +1234,7 @@
   });
 
   /* ===== PERASAAN ===== */
-  let feelLocked = false;
+  let feelLocked = false, feelTimer = null;
   function openFeel(){
     const type = state.type, f = FEELS[type];
     $("s-feel").dataset.tone = type;
@@ -1229,7 +1260,7 @@
     state[state.type + "Feel"] = `${o.e} ${o.t}`;
     $("feels").classList.add("answered"); btn.classList.add("picked");
     document.querySelectorAll(".feel").forEach(b => { b.disabled = true; });
-    later(() => { startQ(); go("s-q"); }, 950);
+    feelTimer = later(() => { startQ(); go("s-q"); }, 950);
   }
 
   /* ===== PERTANYAAN (muncul di akhir tiap momen; tidak masuk kartu) ===== */
@@ -1255,7 +1286,7 @@
     state[state.type + "Change"] = qInput.value.trim();
     qInput.blur();
     Snd.sfx("chime");
-    $("btnQ").disabled = true; busy = true;
+    $("btnQ").disabled = true; busy = true; showBack(false);
     $("qMain").classList.add("hide");
     const final = !!(state.good && state.bad);
     later(() => { prepCapsule(final); go("s-capsule", () => playCapsule(final)); }, 680);
@@ -1321,6 +1352,8 @@
   });
 
   function resetAll(){
+    clearTimeout(feelTimer);
+    feelLocked = false;
     Object.assign(state, { name:"", year:"", good:"", bad:"", goodFeel:"", badFeel:"", goodChange:"", badChange:"", type:null });
     selectedTpl = null;
     nameInput.value = ""; lastLetter = "";
